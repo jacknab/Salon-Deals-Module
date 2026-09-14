@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'wouter';
 import { QRCodeSVG } from 'qrcode.react';
-import { ArrowLeft, ArrowRight, BadgeCheck, CalendarDays, Check, ChevronUp, Clock3, Copy, Info, MapPin, MoreHorizontal, Pencil, Search, ShieldCheck, SlidersHorizontal, Sparkles, Ticket, TrendingUp, UsersRound, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BadgeCheck, CalendarDays, Check, ChevronUp, Clock3, Copy, MapPin, MoreHorizontal, Pencil, Search, ShieldCheck, SlidersHorizontal, Sparkles, Star, Ticket, TrendingUp, UsersRound, X } from 'lucide-react';
 import { FavoriteButton, ModePill, SalonShell, SearchBox } from '@/components/salon-shell';
 import { Deal, Voucher, VoucherStatus, loadLocal, saveLocal, seededDeals, seededVouchers } from '@/lib/salon-data';
 
@@ -116,29 +116,42 @@ export function DealDetailPage() {
       saveLocal('goodroom-vouchers', [voucher, ...vouchers]); setPurchasing(false); setLocation('/wallet');
     }, 600);
   };
-  return <SalonShell><main className="mx-auto max-w-[1100px] px-5 pb-8 pt-7 lg:px-8 lg:pt-12">
-    <Link href="/" className="mb-8 inline-flex items-center gap-2 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground" data-testid="link-back-discover"><ArrowLeft size={14} /> Back to all finds</Link>
-    <div className="grid gap-8 lg:grid-cols-[1.2fr_.8fr] lg:gap-14">
+  const toggleFavorite = () => {
+    const next = favorites.includes(deal.id) ? favorites.filter((item) => item !== deal.id) : [...favorites, deal.id];
+    setFavorites(next);
+    saveLocal('goodroom-favorites', next);
+  };
+  return <SalonShell><main className="deal-detail-page mx-auto max-w-[1180px] px-5 pb-32 pt-6 sm:pt-8 lg:px-8 lg:pb-10 lg:pt-10">
+    <div className="mb-6 flex items-center justify-between gap-4">
+      <Link href="/" className="inline-flex items-center gap-2 rounded-full py-2 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40" data-testid="link-back-discover"><ArrowLeft size={14} /> Back to all finds</Link>
+      <span className="hidden items-center gap-1.5 text-[10px] font-bold uppercase tracking-[.16em] text-muted-foreground sm:flex"><ShieldCheck size={13} className="text-primary" /> Local offer, clear value</span>
+    </div>
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1.14fr)_minmax(350px,.86fr)] lg:items-start lg:gap-12">
       <div>
-        <div className="relative overflow-hidden rounded-[26px] bg-muted"><img src={deal.image} alt="" className="aspect-[1.18] w-full object-cover" /><span className="absolute left-4 top-4 rounded-full bg-accent px-3 py-1.5 text-xs font-bold">{deal.discountPercent}% off today</span></div>
-        <div className="mt-8 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[.15em] text-primary">{deal.category} · {deal.city}</p><h1 className="mt-2 max-w-xl font-serif text-4xl font-bold leading-[.95] tracking-[-.05em] sm:text-5xl">{deal.title}</h1></div><FavoriteButton id={deal.id} active={favorites.includes(deal.id)} onClick={() => { const next = favorites.includes(deal.id) ? favorites.filter((x) => x !== deal.id) : [...favorites, deal.id]; setFavorites(next); saveLocal('goodroom-favorites', next); }} /></div>
-        <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground"><span className="text-accent">★</span> <strong className="text-foreground">{deal.rating}</strong> from {deal.reviewCount} neighbors <span>·</span> {deal.salonName}</p>
-        <p className="mt-8 max-w-xl text-[15px] leading-relaxed text-muted-foreground">{deal.description}</p>
-        <section className="mt-9 overflow-hidden rounded-2xl border border-primary/45 bg-card shadow-[var(--shadow-card)]" aria-labelledby="deal-details-heading">
+        <div className="group relative overflow-hidden rounded-[26px] bg-muted shadow-[var(--shadow-card)]"><img src={deal.image} alt="" className="aspect-[1.16] w-full object-cover transition-transform duration-700 group-hover:scale-[1.025] sm:aspect-[1.45] lg:aspect-[1.24]" /><div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-foreground/55 to-transparent" /><div className="absolute inset-x-4 top-4 flex items-start justify-between gap-3 sm:inset-x-5 sm:top-5"><span className="rounded-full bg-accent px-3 py-1.5 text-[11px] font-bold text-accent-foreground">{deal.discountPercent}% off today</span><FavoriteButton id={deal.id} active={favorites.includes(deal.id)} onClick={toggleFavorite} /></div><div className="absolute bottom-4 left-4 flex items-center gap-2 text-xs font-semibold text-background sm:bottom-5 sm:left-5"><MapPin size={14} /> {deal.salonName} · {deal.city}</div></div>
+        <div className="mt-7 flex items-start justify-between gap-5"><div><p className="text-[10px] font-bold uppercase tracking-[.18em] text-primary">{deal.category} · {deal.city}</p><h1 className="mt-2 max-w-2xl font-serif text-[clamp(2.5rem,6vw,4.9rem)] font-bold leading-[.91] tracking-[-.06em]" data-testid="text-deal-title">{deal.title}</h1></div><FavoriteButton id={`${deal.id}-summary`} active={favorites.includes(deal.id)} onClick={toggleFavorite} /></div>
+        <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground"><span className="inline-flex items-center gap-1.5 font-semibold text-foreground"><Star size={15} className="fill-accent text-accent" /> {deal.rating}</span><span>from {deal.reviewCount} neighbors</span><span aria-hidden="true">·</span><span>{deal.salonName}</span></p>
+        <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">{deal.description}</p>
+        <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3" aria-label="Trust signals">
+          <div className="rounded-xl border border-border bg-card px-3 py-3"><ShieldCheck size={16} className="text-primary" /><p className="mt-2 text-xs font-bold">Secure checkout</p><p className="mt-0.5 text-[11px] text-muted-foreground">No hidden fees</p></div>
+          <div className="rounded-xl border border-border bg-card px-3 py-3"><Ticket size={16} className="text-primary" /><p className="mt-2 text-xs font-bold">Instant voucher</p><p className="mt-0.5 text-[11px] text-muted-foreground">Ready in your wallet</p></div>
+          <div className="col-span-2 rounded-xl border border-border bg-card px-3 py-3 sm:col-span-1"><BadgeCheck size={16} className="text-primary" /><p className="mt-2 text-xs font-bold">Local favourite</p><p className="mt-0.5 text-[11px] text-muted-foreground">Trusted nearby salon</p></div>
+        </div>
+        <section className="mt-8 overflow-hidden rounded-2xl border border-primary/45 bg-card shadow-[var(--shadow-card)]" aria-labelledby="deal-details-heading">
           <div className="flex items-start justify-between gap-4 p-5 sm:p-6">
-            <div><p className="text-[10px] font-bold uppercase tracking-[.18em] text-primary">Offer details</p><h2 id="deal-details-heading" className="mt-2 font-serif text-2xl font-bold tracking-[-.03em]">What you’re getting</h2><p className="mt-2 text-sm text-muted-foreground">Everything included with this goodroom find.</p></div>
-            <button onClick={() => setShowDealDetails((visible) => !visible)} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:text-foreground" aria-expanded={showDealDetails} aria-controls="deal-details-content" aria-label={showDealDetails ? 'Collapse deal details' : 'Expand deal details'} data-testid="button-toggle-deal-details"><ChevronUp size={17} className={`transition-transform ${showDealDetails ? '' : 'rotate-180'}`} /></button>
+            <div><p className="text-[10px] font-bold uppercase tracking-[.18em] text-primary">Offer details</p><h2 id="deal-details-heading" className="mt-2 font-serif text-2xl font-bold tracking-[-.03em]">What you’re getting</h2><p className="mt-2 text-sm text-muted-foreground">The service, clearly laid out before you buy.</p></div>
+            <button onClick={() => setShowDealDetails((visible) => !visible)} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:border-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40" aria-expanded={showDealDetails} aria-controls="deal-details-content" aria-label={showDealDetails ? 'Collapse deal details' : 'Expand deal details'} data-testid="button-toggle-deal-details"><ChevronUp size={17} className={`transition-transform duration-300 ${showDealDetails ? '' : 'rotate-180'}`} /></button>
           </div>
           {showDealDetails && <div id="deal-details-content" className="border-t border-border px-5 pb-5 sm:px-6 sm:pb-6">
-            <div className="grid gap-4 pt-5 text-sm">
-              <div className="flex items-start gap-3"><UsersRound size={18} className="mt-0.5 shrink-0 text-primary" /><p><strong className="font-semibold">Number of people:</strong> 1 person</p></div>
-              <div className="flex items-start gap-3"><CalendarDays size={18} className="mt-0.5 shrink-0 text-primary" /><p><strong className="font-semibold">Expires:</strong> Valid through {dateLabel(deal.endsAt)} <Info size={14} className="ml-1 inline text-muted-foreground" aria-label="Expiration information" /></p></div>
-              <div className="flex items-start gap-3"><ShieldCheck size={18} className="mt-0.5 shrink-0 text-primary" /><p><strong className="font-semibold">Cancellation policy:</strong> Fully refundable within 3 days after purchase unless otherwise stated <button onClick={() => setShowFinePrint((visible) => !visible)} className="underline underline-offset-2 hover:text-primary" data-testid="button-cancellation-policy">here</button></p></div>
+            <div className="grid gap-3 pt-5 text-sm sm:grid-cols-3 sm:gap-4">
+              <div className="flex items-start gap-3 rounded-xl bg-muted/70 p-3"><UsersRound size={18} className="mt-0.5 shrink-0 text-primary" /><p><strong className="block font-semibold">For one person</strong><span className="text-xs text-muted-foreground">One voucher, one visit</span></p></div>
+              <div className="flex items-start gap-3 rounded-xl bg-muted/70 p-3"><CalendarDays size={18} className="mt-0.5 shrink-0 text-primary" /><p><strong className="block font-semibold">Valid through {dateLabel(deal.endsAt)}</strong><span className="text-xs text-muted-foreground">Plenty of time to book</span></p></div>
+              <div className="flex items-start gap-3 rounded-xl bg-muted/70 p-3"><ShieldCheck size={18} className="mt-0.5 shrink-0 text-primary" /><p><strong className="block font-semibold">Refundable for 3 days</strong><span className="text-xs text-muted-foreground">Unless otherwise stated</span></p></div>
             </div>
             <div className="my-5 border-t border-border" />
             <h3 className="text-base font-bold">What’s included</h3>
-            <ul className="mt-4 space-y-3">
-              {deal.highlights.map((item) => <li key={item} className="flex items-start gap-2.5 text-sm text-foreground"><Check size={17} className="mt-0.5 shrink-0 text-primary" /><span>{item}</span></li>)}
+            <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+              {deal.highlights.map((item) => <li key={item} className="flex items-start gap-2.5 text-sm text-foreground"><span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-secondary"><Check size={13} /></span><span>{item}</span></li>)}
             </ul>
             <div className="mt-5 border-t border-border pt-5">
               <h3 className="text-base font-bold">Before you buy</h3>
@@ -149,6 +162,12 @@ export function DealDetailPage() {
         </section>
       </div>
       <aside className="lg:pt-20"><div className="sticky top-24 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-7"><div className="flex items-end justify-between border-b border-border pb-5"><div><span className="font-serif text-4xl font-bold">{money(deal.dealPrice)}</span><span className="ml-2 text-sm text-muted-foreground line-through">{money(deal.originalPrice)}</span></div><span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold">Save {money(deal.savings)}</span></div><div className="mt-5 flex items-center justify-between text-sm"><span className="text-muted-foreground">How many?</span><div className="flex items-center gap-3 rounded-full border border-border px-2 py-1"><button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="grid h-6 w-6 place-items-center text-lg" data-testid="button-quantity-minus">−</button><span className="w-5 text-center font-semibold" data-testid="text-quantity">{quantity}</span><button onClick={() => setQuantity(Math.min(4, quantity + 1))} className="grid h-6 w-6 place-items-center text-lg" data-testid="button-quantity-plus">+</button></div></div><button onClick={buy} disabled={purchasing} className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-60" data-testid="button-buy-deal">{purchasing ? 'Reserving your find…' : `Get this deal · ${money(deal.dealPrice * quantity)}`} {!purchasing && <ArrowRight size={16} />}</button><p className="mt-3 text-center text-[11px] text-muted-foreground">Instant voucher · no hidden fees</p><div className="mt-7 rounded-xl bg-muted p-4"><div className="flex items-center gap-2 text-xs font-bold"><Clock3 size={14} className="text-primary" /> This offer has a short shelf life</div><p className="mt-2 text-xs leading-relaxed text-muted-foreground">47 neighbors already claimed it. Offer closes {dateLabel(deal.endsAt)}.</p><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-card"><div className="h-full w-[78%] rounded-full bg-secondary" /></div></div><div className="mt-5 flex items-start gap-3 text-xs text-muted-foreground"><ShieldCheck size={16} className="mt-0.5 shrink-0 text-primary" /><span>Pay securely and show your voucher at {deal.salonName}. Your voucher lives in your wallet.</span></div></div></aside>
+    </div>
+    <div className="fixed inset-x-3 bottom-[5.5rem] z-30 rounded-2xl border border-border bg-card/95 p-3 shadow-[var(--shadow-float)] backdrop-blur-xl md:hidden" data-testid="mobile-purchase-bar">
+      <div className="flex items-center gap-3">
+        <div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-primary">From</p><p className="font-serif text-2xl font-bold leading-none">{money(deal.dealPrice * quantity)}</p></div>
+        <button onClick={buy} disabled={purchasing} className="flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-bold text-primary-foreground transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-wait disabled:opacity-60" data-testid="button-buy-deal-mobile">{purchasing ? 'Reserving…' : 'Get this deal'} {!purchasing && <ArrowRight size={15} />}</button>
+      </div>
     </div>
   </main><ModePill /></SalonShell>;
 }

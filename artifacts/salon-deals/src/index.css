@@ -102,3 +102,13 @@
 .deal-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-float); }
 .scoop { border-radius: 42% 58% 46% 54% / 54% 42% 58% 46%; }
 .dash-grid { background-image: linear-gradient(hsl(var(--border) / .45) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / .45) 1px, transparent 1px); background-size: 28px 28px; }
+
+@media (min-width: 1024px) {
+  .deal-detail-page > div > aside { padding-top: 0; }
+}
+
+.deal-detail-page aside button:focus-visible,
+.deal-detail-page section button:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 3px;
+}
