@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'wouter';
-import { ArrowLeft, ArrowRight, BadgeCheck, CalendarDays, Check, Clock3, Copy, MapPin, MoreHorizontal, Pencil, QrCode, Search, ShieldCheck, SlidersHorizontal, Sparkles, Ticket, TrendingUp, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BadgeCheck, CalendarDays, Check, ChevronUp, Clock3, Copy, Info, MapPin, MoreHorizontal, Pencil, QrCode, Search, ShieldCheck, SlidersHorizontal, Sparkles, Ticket, TrendingUp, UsersRound, X } from 'lucide-react';
 import { FavoriteButton, ModePill, SalonShell, SearchBox } from '@/components/salon-shell';
 import { Deal, Voucher, VoucherStatus, loadLocal, saveLocal, seededDeals, seededVouchers } from '@/lib/salon-data';
 
@@ -105,6 +105,8 @@ export function DealDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [favorites, setFavorites] = useState<string[]>(() => loadLocal('goodroom-favorites', []));
   const [purchasing, setPurchasing] = useState(false);
+  const [showDealDetails, setShowDealDetails] = useState(true);
+  const [showFinePrint, setShowFinePrint] = useState(false);
   const buy = () => {
     setPurchasing(true);
     window.setTimeout(() => {
@@ -116,7 +118,35 @@ export function DealDetailPage() {
   return <SalonShell><main className="mx-auto max-w-[1100px] px-5 pb-8 pt-7 lg:px-8 lg:pt-12">
     <Link href="/" className="mb-8 inline-flex items-center gap-2 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground" data-testid="link-back-discover"><ArrowLeft size={14} /> Back to all finds</Link>
     <div className="grid gap-8 lg:grid-cols-[1.2fr_.8fr] lg:gap-14">
-      <div><div className="relative overflow-hidden rounded-[26px] bg-muted"><img src={deal.image} alt="" className="aspect-[1.18] w-full object-cover" /><span className="absolute left-4 top-4 rounded-full bg-accent px-3 py-1.5 text-xs font-bold">{deal.discountPercent}% off today</span></div><div className="mt-8 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[.15em] text-primary">{deal.category} · {deal.city}</p><h1 className="mt-2 max-w-xl font-serif text-4xl font-bold leading-[.95] tracking-[-.05em] sm:text-5xl">{deal.title}</h1></div><FavoriteButton id={deal.id} active={favorites.includes(deal.id)} onClick={() => { const next = favorites.includes(deal.id) ? favorites.filter((x) => x !== deal.id) : [...favorites, deal.id]; setFavorites(next); saveLocal('goodroom-favorites', next); }} /></div><p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground"><span className="text-accent">★</span> <strong className="text-foreground">{deal.rating}</strong> from {deal.reviewCount} neighbors <span>·</span> {deal.salonName}</p><p className="mt-8 max-w-xl text-[15px] leading-relaxed text-muted-foreground">{deal.description}</p><div className="mt-9 border-t border-border pt-7"><h2 className="font-serif text-2xl font-bold">What’s included</h2><div className="mt-5 grid gap-3 sm:grid-cols-3">{deal.highlights.map((item) => <div key={item} className="rounded-xl bg-muted p-4"><BadgeCheck size={17} className="text-primary" /><p className="mt-3 text-sm font-semibold leading-tight">{item}</p></div>)}</div></div><div className="mt-8 border-t border-border pt-7"><h2 className="font-serif text-2xl font-bold">The fine print</h2><p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">{deal.finePrint}</p></div></div>
+      <div>
+        <div className="relative overflow-hidden rounded-[26px] bg-muted"><img src={deal.image} alt="" className="aspect-[1.18] w-full object-cover" /><span className="absolute left-4 top-4 rounded-full bg-accent px-3 py-1.5 text-xs font-bold">{deal.discountPercent}% off today</span></div>
+        <div className="mt-8 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[.15em] text-primary">{deal.category} · {deal.city}</p><h1 className="mt-2 max-w-xl font-serif text-4xl font-bold leading-[.95] tracking-[-.05em] sm:text-5xl">{deal.title}</h1></div><FavoriteButton id={deal.id} active={favorites.includes(deal.id)} onClick={() => { const next = favorites.includes(deal.id) ? favorites.filter((x) => x !== deal.id) : [...favorites, deal.id]; setFavorites(next); saveLocal('goodroom-favorites', next); }} /></div>
+        <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground"><span className="text-accent">★</span> <strong className="text-foreground">{deal.rating}</strong> from {deal.reviewCount} neighbors <span>·</span> {deal.salonName}</p>
+        <p className="mt-8 max-w-xl text-[15px] leading-relaxed text-muted-foreground">{deal.description}</p>
+        <section className="mt-9 overflow-hidden rounded-2xl border border-primary/45 bg-card shadow-[var(--shadow-card)]" aria-labelledby="deal-details-heading">
+          <div className="flex items-start justify-between gap-4 p-5 sm:p-6">
+            <div><p className="text-[10px] font-bold uppercase tracking-[.18em] text-primary">Offer details</p><h2 id="deal-details-heading" className="mt-2 font-serif text-2xl font-bold tracking-[-.03em]">What you’re getting</h2><p className="mt-2 text-sm text-muted-foreground">Everything included with this goodroom find.</p></div>
+            <button onClick={() => setShowDealDetails((visible) => !visible)} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:text-foreground" aria-expanded={showDealDetails} aria-controls="deal-details-content" aria-label={showDealDetails ? 'Collapse deal details' : 'Expand deal details'} data-testid="button-toggle-deal-details"><ChevronUp size={17} className={`transition-transform ${showDealDetails ? '' : 'rotate-180'}`} /></button>
+          </div>
+          {showDealDetails && <div id="deal-details-content" className="border-t border-border px-5 pb-5 sm:px-6 sm:pb-6">
+            <div className="grid gap-4 pt-5 text-sm">
+              <div className="flex items-start gap-3"><UsersRound size={18} className="mt-0.5 shrink-0 text-primary" /><p><strong className="font-semibold">Number of people:</strong> 1 person</p></div>
+              <div className="flex items-start gap-3"><CalendarDays size={18} className="mt-0.5 shrink-0 text-primary" /><p><strong className="font-semibold">Expires:</strong> Valid through {dateLabel(deal.endsAt)} <Info size={14} className="ml-1 inline text-muted-foreground" aria-label="Expiration information" /></p></div>
+              <div className="flex items-start gap-3"><ShieldCheck size={18} className="mt-0.5 shrink-0 text-primary" /><p><strong className="font-semibold">Cancellation policy:</strong> Fully refundable within 3 days after purchase unless otherwise stated <button onClick={() => setShowFinePrint((visible) => !visible)} className="underline underline-offset-2 hover:text-primary" data-testid="button-cancellation-policy">here</button></p></div>
+            </div>
+            <div className="my-5 border-t border-border" />
+            <h3 className="text-base font-bold">What’s included</h3>
+            <ul className="mt-4 space-y-3">
+              {deal.highlights.map((item) => <li key={item} className="flex items-start gap-2.5 text-sm text-foreground"><Check size={17} className="mt-0.5 shrink-0 text-primary" /><span>{item}</span></li>)}
+            </ul>
+            <div className="mt-5 border-t border-border pt-5">
+              <h3 className="text-base font-bold">Before you buy</h3>
+              <button onClick={() => setShowFinePrint((visible) => !visible)} className="mt-3 inline-flex items-center gap-2 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground" aria-expanded={showFinePrint} data-testid="button-before-you-buy">{showFinePrint ? 'Hide need-to-know info' : 'Need to know info'} <ArrowRight size={14} className={`transition-transform ${showFinePrint ? 'rotate-90' : ''}`} /></button>
+              {showFinePrint && <p className="mt-3 rounded-xl bg-muted p-4 text-sm leading-relaxed text-muted-foreground">{deal.finePrint}</p>}
+            </div>
+          </div>}
+        </section>
+      </div>
       <aside className="lg:pt-20"><div className="sticky top-24 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-7"><div className="flex items-end justify-between border-b border-border pb-5"><div><span className="font-serif text-4xl font-bold">{money(deal.dealPrice)}</span><span className="ml-2 text-sm text-muted-foreground line-through">{money(deal.originalPrice)}</span></div><span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold">Save {money(deal.savings)}</span></div><div className="mt-5 flex items-center justify-between text-sm"><span className="text-muted-foreground">How many?</span><div className="flex items-center gap-3 rounded-full border border-border px-2 py-1"><button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="grid h-6 w-6 place-items-center text-lg" data-testid="button-quantity-minus">−</button><span className="w-5 text-center font-semibold" data-testid="text-quantity">{quantity}</span><button onClick={() => setQuantity(Math.min(4, quantity + 1))} className="grid h-6 w-6 place-items-center text-lg" data-testid="button-quantity-plus">+</button></div></div><button onClick={buy} disabled={purchasing} className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-60" data-testid="button-buy-deal">{purchasing ? 'Reserving your find…' : `Get this deal · ${money(deal.dealPrice * quantity)}`} {!purchasing && <ArrowRight size={16} />}</button><p className="mt-3 text-center text-[11px] text-muted-foreground">Instant voucher · no hidden fees</p><div className="mt-7 rounded-xl bg-muted p-4"><div className="flex items-center gap-2 text-xs font-bold"><Clock3 size={14} className="text-primary" /> This offer has a short shelf life</div><p className="mt-2 text-xs leading-relaxed text-muted-foreground">47 neighbors already claimed it. Offer closes {dateLabel(deal.endsAt)}.</p><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-card"><div className="h-full w-[78%] rounded-full bg-secondary" /></div></div><div className="mt-5 flex items-start gap-3 text-xs text-muted-foreground"><ShieldCheck size={16} className="mt-0.5 shrink-0 text-primary" /><span>Pay securely and show your voucher at {deal.salonName}. Your voucher lives in your wallet.</span></div></div></aside>
     </div>
   </main><ModePill /></SalonShell>;
