@@ -1,4 +1,4 @@
-export type DealStatus = 'active' | 'sold-out' | 'expired';
+export type DealStatus = 'active' | 'paused' | 'archived' | 'sold-out' | 'expired';
 export type VoucherStatus = 'active' | 'used' | 'expired';
 
 export type Deal = {
