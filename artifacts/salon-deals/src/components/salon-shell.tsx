@@ -12,7 +12,7 @@ export function SalonShell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex h-[72px] max-w-[1240px] items-center justify-between px-5 lg:px-8">
           <Link href="/" className="flex items-center gap-2.5" data-testid="link-brand">
             <span className="grid h-9 w-9 place-items-center rounded-[13px] bg-primary text-primary-foreground shadow-sm"><Sparkles size={17} /></span>
-            <span className="font-serif text-[21px] font-bold tracking-[-.04em]">goodroom</span>
+            <span className="font-serif text-[21px] font-bold tracking-[-.04em]">certxa</span>
           </Link>
           <nav className="hidden items-center gap-7 text-[13px] font-semibold text-muted-foreground md:flex">
             <Link href="/" className={location === '/' ? 'text-foreground' : 'transition-colors hover:text-foreground'} data-testid="link-discover">Discover</Link>
@@ -38,7 +38,7 @@ export function SalonShell({ children }: { children: ReactNode }) {
       {children}
       <footer className="mx-auto mt-24 max-w-[1240px] border-t border-border px-5 py-10 lg:px-8">
         <div className="flex flex-col justify-between gap-4 text-xs text-muted-foreground sm:flex-row">
-          <span className="font-serif text-lg font-bold text-foreground">goodroom</span>
+          <span className="font-serif text-lg font-bold text-foreground">certxa</span>
           <span>Good finds. Clear value. Local beauty.</span>
         </div>
       </footer>
