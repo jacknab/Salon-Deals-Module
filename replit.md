@@ -1,6 +1,6 @@
-# [Project name]
+# Salon Deals
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A drop-in mini deals marketplace for salon directories, connecting local clients with limited-time salon offers and digital vouchers.
 
 ## Run & Operate
 
@@ -22,23 +22,30 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/salon-deals` — the customer marketplace, voucher wallet, deal detail flow, and salon redemption console.
+- `artifacts/salon-deals/src/data` — seeded deals and voucher state persisted in local storage for the first module build.
+- `artifacts/salon-deals/src/index.css` — shared visual tokens and app styling.
+- `attached_assets` — original Groupon-era screenshots supplied as UX references only.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The first version is frontend-only with local storage so it can be embedded and wired into an existing salon directory without requiring a payment provider, auth system, or database migration.
+- Customer and salon experiences share one shell and can be switched without creating separate products.
+- Voucher issuance and redemption are modeled as local state now; the integration seam is the deal/voucher data layer rather than hard-coding the flows into the page layout.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Customers can discover, search, filter, favorite, and purchase limited-time salon deals.
+- Customers receive active, used, and expired vouchers in a wallet with a scannable voucher view.
+- Salons can review active deals, monitor sales and redemption metrics, look up voucher codes, and mark visits as redeemed.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- The user wants a mini Groupon-style system that can be dropped into their existing salon marketplace/directory.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- The first build uses local seeded data and local storage; production wiring should replace that layer with the host marketplace's auth, database, and checkout services.
 
 ## Pointers
 
