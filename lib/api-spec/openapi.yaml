@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: deals
+    description: Marketplace and salon deal operations
 paths:
   /healthz:
     get:
@@ -24,7 +26,111 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /deals:
+    get:
+      operationId: listPublicDeals
+      tags: [deals]
+      summary: List active marketplace deals
+      responses:
+        "200":
+          description: Active deals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deal"
+  /salon/deals:
+    get:
+      operationId: listSalonDeals
+      tags: [deals]
+      summary: List deals owned by the signed-in salon
+      responses:
+        "200":
+          description: The salon owner's deals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deal"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createSalonDeal
+      tags: [deals]
+      summary: Create a deal for the signed-in salon
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DealInput"
+      responses:
+        "201":
+          description: Created deal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deal"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /salon/deals/{id}:
+    patch:
+      operationId: updateSalonDeal
+      tags: [deals]
+      summary: Update a deal owned by the signed-in salon
+      parameters:
+        - $ref: "#/components/parameters/DealId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DealUpdate"
+      responses:
+        "200":
+          description: Updated deal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deal"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 components:
+  parameters:
+    DealId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +139,122 @@ components:
           type: string
       required:
         - status
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    Deal:
+      type: object
+      required:
+        - id
+        - salonName
+        - category
+        - city
+        - title
+        - offerType
+        - image
+        - originalPrice
+        - dealPrice
+        - discountPercent
+        - savings
+        - purchasedCount
+        - capacity
+        - endsAt
+        - description
+        - highlights
+        - finePrint
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id: { type: string }
+        salonName: { type: string }
+        category: { type: string }
+        city: { type: string }
+        title: { type: string }
+        offerType:
+          type: string
+          enum: [flat-rate, cash-gift-card, service-gift-card, bookable]
+        serviceName: { type: ["string", "null"] }
+        giftCardValue: { type: ["integer", "null"], minimum: 0 }
+        image: { type: string }
+        originalPrice: { type: integer, minimum: 0 }
+        dealPrice: { type: integer, minimum: 0 }
+        discountPercent: { type: integer, minimum: 0, maximum: 100 }
+        savings: { type: integer, minimum: 0 }
+        purchasedCount: { type: integer, minimum: 0 }
+        capacity: { type: integer, minimum: 1 }
+        endsAt: { type: string, format: date }
+        description: { type: string }
+        highlights:
+          type: array
+          items: { type: string }
+        finePrint: { type: string }
+        status:
+          type: string
+          enum: [active, paused, archived, sold-out, expired]
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    DealInput:
+      type: object
+      required:
+        - salonName
+        - category
+        - city
+        - title
+        - offerType
+        - originalPrice
+        - dealPrice
+        - capacity
+        - endsAt
+        - description
+        - highlights
+        - finePrint
+      properties:
+        salonName: { type: string, minLength: 1 }
+        category: { type: string, minLength: 1 }
+        city: { type: string, minLength: 1 }
+        title: { type: string, minLength: 1 }
+        offerType:
+          type: string
+          enum: [flat-rate, cash-gift-card, service-gift-card, bookable]
+        serviceName: { type: ["string", "null"] }
+        giftCardValue: { type: ["integer", "null"], minimum: 0 }
+        image: { type: string }
+        originalPrice: { type: integer, minimum: 0 }
+        dealPrice: { type: integer, minimum: 0 }
+        capacity: { type: integer, minimum: 1 }
+        endsAt: { type: string, format: date }
+        description: { type: string }
+        highlights:
+          type: array
+          items: { type: string }
+        finePrint: { type: string }
+    DealUpdate:
+      type: object
+      properties:
+        salonName: { type: string, minLength: 1 }
+        category: { type: string, minLength: 1 }
+        city: { type: string, minLength: 1 }
+        title: { type: string, minLength: 1 }
+        offerType:
+          type: string
+          enum: [flat-rate, cash-gift-card, service-gift-card, bookable]
+        serviceName: { type: ["string", "null"] }
+        giftCardValue: { type: ["integer", "null"], minimum: 0 }
+        image: { type: string }
+        originalPrice: { type: integer, minimum: 0 }
+        dealPrice: { type: integer, minimum: 0 }
+        capacity: { type: integer, minimum: 1 }
+        endsAt: { type: string, format: date }
+        description: { type: string }
+        highlights:
+          type: array
+          items: { type: string }
+        finePrint: { type: string }
+        status:
+          type: string
+          enum: [active, paused, archived, sold-out, expired]
 
