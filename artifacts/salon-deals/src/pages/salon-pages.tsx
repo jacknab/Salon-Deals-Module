@@ -1,9 +1,9 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'wouter';
 import { QRCodeSVG } from 'qrcode.react';
-import { Archive, ArrowLeft, ArrowRight, BadgeCheck, CalendarDays, Check, ChevronUp, Clock3, Copy, Heart, MapPin, MoreHorizontal, Pause, Pencil, Play, Plus, Search, ShieldCheck, SlidersHorizontal, Sparkles, Star, Ticket, TrendingUp, UsersRound, X } from 'lucide-react';
+import { Archive, ArrowLeft, ArrowRight, BadgeCheck, CalendarDays, CalendarCheck, Check, ChevronUp, Clock3, Copy, DollarSign, Gift, Heart, Info, MapPin, MoreHorizontal, Pause, Pencil, Play, Plus, Search, Scissors, ShieldCheck, SlidersHorizontal, Sparkles, Star, Ticket, TrendingUp, UsersRound, X } from 'lucide-react';
 import { FavoriteButton, ModePill, SalonShell, SearchBox } from '@/components/salon-shell';
-import { Deal, Voucher, VoucherStatus, loadLocal, saveLocal, seededDeals, seededVouchers } from '@/lib/salon-data';
+import { Deal, OfferType, Voucher, VoucherStatus, loadLocal, saveLocal, seededDeals, seededVouchers } from '@/lib/salon-data';
 
 const categories = ['All finds', 'Hair', 'Skin', 'Nails'];
 const money = (n: number) => `$${n}`;
@@ -202,6 +202,208 @@ const initialRedemptions: Redemption[] = [
   { code: 'LUM-8P4-6TA', customer: 'Noah Williams', service: 'Lumen facial', time: 'Mon, 2:08 PM', status: 'Redeemed' },
 ];
 
+type DealCreationDraft = {
+  offerType: OfferType;
+  title: string;
+  category: string;
+  city: string;
+  serviceName: string;
+  serviceDescription: string;
+  regularPrice: string;
+  customerPrice: string;
+  giftCardValue: string;
+  capacity: string;
+  expiresAt: string;
+  description: string;
+  finePrint: string;
+};
+
+const offerTypeOptions: { type: OfferType; label: string; description: string; icon: ReactNode }[] = [
+  { type: 'flat-rate', label: 'Flat-rate deal', description: 'A fixed service at a special price.', icon: <DollarSign size={18} /> },
+  { type: 'cash-gift-card', label: 'Salon cash gift card', description: 'A dollar value customers can spend in your salon.', icon: <Gift size={18} /> },
+  { type: 'service-gift-card', label: 'Prepaid service gift card', description: 'One specific service, honored no matter its price later.', icon: <Scissors size={18} /> },
+  { type: 'bookable', label: 'Bookable deal', description: 'A deal that will connect to online booking.', icon: <CalendarCheck size={18} /> },
+];
+
+function dateInThirtyDays() {
+  const date = new Date();
+  date.setDate(date.getDate() + 30);
+  return date.toISOString().slice(0, 10);
+}
+
+function emptyDealCreationDraft(): DealCreationDraft {
+  return {
+    offerType: 'flat-rate',
+    title: '',
+    category: 'Hair',
+    city: 'Brooklyn, NY',
+    serviceName: '',
+    serviceDescription: '',
+    regularPrice: '120',
+    customerPrice: '72',
+    giftCardValue: '100',
+    capacity: '30',
+    expiresAt: dateInThirtyDays(),
+    description: '',
+    finePrint: '',
+  };
+}
+
+export function CreateDealPage() {
+  const [, setLocation] = useLocation();
+  const [draft, setDraft] = useState<DealCreationDraft>(emptyDealCreationDraft);
+  const [error, setError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const update = (key: keyof DealCreationDraft, value: string | OfferType) => {
+    setDraft((current) => ({ ...current, [key]: value }));
+    setError('');
+  };
+  const selectedOffer = offerTypeOptions.find((option) => option.type === draft.offerType) ?? offerTypeOptions[0];
+  const isServiceCard = draft.offerType === 'service-gift-card';
+  const isCashCard = draft.offerType === 'cash-gift-card';
+  const isBookable = draft.offerType === 'bookable';
+  const fieldClass = 'h-12 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10';
+  const moneyFieldClass = 'flex h-12 items-center rounded-xl border border-border bg-background px-3 transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10';
+
+  const publish = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const customerPrice = Number(draft.customerPrice);
+    const regularPrice = Number(draft.regularPrice);
+    const giftCardValue = Number(draft.giftCardValue);
+    const capacity = Number(draft.capacity);
+    if (!draft.title.trim() || !draft.city.trim()) return setError('Add an offer title and salon location to continue.');
+    if (!customerPrice || customerPrice < 1 || !capacity || capacity < 1) return setError('Enter a valid customer price and voucher capacity.');
+    if (!isServiceCard && (!regularPrice || regularPrice < 1)) return setError('Enter the regular price for this offer.');
+    if (isCashCard && (!giftCardValue || giftCardValue < 1)) return setError('Enter the value customers can spend at your salon.');
+    if ((isServiceCard || isBookable) && !draft.serviceName.trim()) return setError('Add the specific service included in this offer.');
+
+    const deals = loadLocal<Deal[]>('certxa-deals', seededDeals);
+    const originalPrice = isCashCard ? giftCardValue : isServiceCard ? customerPrice : regularPrice;
+    const discountPercent = originalPrice > customerPrice ? Math.max(1, Math.round((1 - customerPrice / originalPrice) * 100)) : 0;
+    const image = draft.category === 'Skin' ? '/images/editorial-facial.jpg' : draft.category === 'Nails' ? '/images/editorial-nails.jpg' : '/images/editorial-hair.jpg';
+    const id = `${draft.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'new-deal'}-${Date.now()}`;
+    const endsAt = new Date(`${draft.expiresAt}T23:59:59`);
+    const defaultDescription = isCashCard
+      ? `A ${money(giftCardValue)} salon gift card to use toward any eligible service at ${draft.city.trim()}.`
+      : isServiceCard
+        ? `A prepaid ${draft.serviceName.trim()} gift card${draft.serviceDescription.trim() ? ` — ${draft.serviceDescription.trim()}` : ''}. The service will be honored even if its listed price changes before redemption.`
+        : isBookable
+          ? `A bookable ${draft.serviceName.trim() || 'salon experience'} from ${draft.city.trim()}. Online booking setup will be connected before launch.`
+          : 'A limited-time salon offer made for a little more self-care in the week ahead.';
+    const created: Deal = {
+      id,
+      title: draft.title.trim(),
+      salonName: 'Saffron Studio',
+      category: draft.category,
+      city: draft.city.trim(),
+      rating: 5,
+      reviewCount: 0,
+      image,
+      originalPrice,
+      dealPrice: customerPrice,
+      discountPercent,
+      savings: Math.max(0, originalPrice - customerPrice),
+      purchasedCount: 0,
+      capacity: Math.round(capacity),
+      endsAt: Number.isNaN(endsAt.getTime()) ? new Date(Date.now() + 30 * 86400000).toISOString() : endsAt.toISOString(),
+      description: draft.description.trim() || defaultDescription,
+      highlights: isCashCard
+        ? [`${money(giftCardValue)} to spend at the salon`, 'Flexible across eligible services', 'Digital voucher delivered instantly']
+        : isServiceCard
+          ? [draft.serviceName.trim(), 'Honored regardless of future service pricing', 'Digital voucher delivered instantly']
+          : isBookable
+            ? [draft.serviceName.trim() || 'Specific salon service', 'Online booking connection coming soon', 'Digital voucher delivered instantly']
+            : ['Personalized salon service', 'Thoughtful salon experience', 'Signature finish'],
+      finePrint: draft.finePrint.trim() || (isBookable ? 'Online booking setup is coming soon. Customers will receive instructions when booking is enabled.' : 'Valid for one person. Please book directly with the salon after purchasing.'),
+      status: 'active',
+      offerType: draft.offerType,
+      serviceName: draft.serviceName.trim() || undefined,
+      giftCardValue: isCashCard ? giftCardValue : undefined,
+    };
+    saveLocal('certxa-deals', [created, ...deals]);
+    setSubmitted(true);
+  };
+
+  if (submitted) {
+    return <SalonShell><main className="mx-auto max-w-[920px] px-5 pb-20 pt-12 lg:px-8 lg:pt-20">
+      <div className="rounded-[28px] border border-border bg-card p-8 text-center shadow-[var(--shadow-card)] sm:p-14">
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-secondary text-primary"><Check size={28} /></div>
+        <p className="mt-6 text-xs font-bold uppercase tracking-[.18em] text-primary">Deal created</p>
+        <h1 className="mt-2 font-serif text-4xl font-bold tracking-[-.05em] sm:text-5xl">Your offer is ready.</h1>
+        <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">It has been saved to your salon console and is now visible in the marketplace preview.</p>
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+          <button onClick={() => setLocation('/salon')} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-bold text-primary-foreground transition-transform hover:-translate-y-0.5" data-testid="button-view-salon-console">Back to salon console <ArrowRight size={15} /></button>
+          <button onClick={() => { setDraft(emptyDealCreationDraft()); setSubmitted(false); }} className="rounded-xl border border-border px-5 py-3 text-xs font-bold transition-colors hover:border-foreground" data-testid="button-create-another-deal">Create another deal</button>
+        </div>
+      </div>
+    </main><ModePill /></SalonShell>;
+  }
+
+  return <SalonShell><main className="mx-auto max-w-[1180px] px-5 pb-20 pt-8 lg:px-8 lg:pt-12">
+    <Link href="/salon" className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground" data-testid="link-back-salon-console"><ArrowLeft size={14} /> Back to salon console</Link>
+    <div className="mt-7 max-w-2xl">
+      <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.18em] text-primary"><Sparkles size={14} /> New salon offer</p>
+      <h1 className="mt-3 font-serif text-[clamp(2.8rem,6vw,5rem)] font-bold leading-[.92] tracking-[-.065em]">Create a deal<br /><em className="font-normal text-primary">your way.</em></h1>
+      <p className="mt-5 max-w-xl text-sm leading-relaxed text-muted-foreground">Choose the offer format that fits your salon. You can fine-tune the details before publishing it to the marketplace.</p>
+    </div>
+
+    <form onSubmit={publish} className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_330px] lg:items-start">
+      <div className="space-y-6">
+        <section className="rounded-2xl border border-border bg-card p-5 sm:p-7" aria-labelledby="offer-type-heading">
+          <div><p className="text-[10px] font-bold uppercase tracking-[.18em] text-primary">Step 1</p><h2 id="offer-type-heading" className="mt-2 font-serif text-2xl font-bold">What kind of offer is this?</h2><p className="mt-2 text-sm text-muted-foreground">Customers will see this framing before they purchase.</p></div>
+          <fieldset className="mt-6 grid gap-3 sm:grid-cols-2">
+            <legend className="sr-only">Offer type</legend>
+            {offerTypeOptions.map((option) => <button type="button" key={option.type} onClick={() => update('offerType', option.type)} className={`relative flex items-start gap-3 rounded-xl border p-4 text-left transition-all ${draft.offerType === option.type ? 'border-primary bg-primary/5 ring-2 ring-primary/15' : 'border-border bg-background hover:border-foreground'}`} aria-pressed={draft.offerType === option.type} data-testid={`button-offer-type-${option.type}`}>
+              <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${draft.offerType === option.type ? 'bg-primary text-primary-foreground' : 'bg-muted text-primary'}`}>{option.icon}</span>
+              <span><strong className="block text-sm font-bold">{option.label}</strong><span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{option.description}</span></span>
+              {draft.offerType === option.type && <Check size={15} className="absolute right-3 top-3 text-primary" />}
+            </button>)}
+          </fieldset>
+          {isBookable && <div className="mt-5 flex items-start gap-3 rounded-xl bg-accent/35 p-4 text-xs leading-relaxed"><Info size={16} className="mt-0.5 shrink-0 text-primary" /><p><strong className="font-bold">Booking setup is coming next.</strong> This creates the deal placeholder now. Online booking onboarding and login will be connected before customers can schedule.</p></div>}
+        </section>
+
+        <section className="rounded-2xl border border-border bg-card p-5 sm:p-7" aria-labelledby="offer-details-heading">
+          <div><p className="text-[10px] font-bold uppercase tracking-[.18em] text-primary">Step 2</p><h2 id="offer-details-heading" className="mt-2 font-serif text-2xl font-bold">Offer details</h2><p className="mt-2 text-sm text-muted-foreground">Write the version of this deal that customers should understand at a glance.</p></div>
+          <div className="mt-6 grid gap-5 sm:grid-cols-2">
+            <label className="sm:col-span-2"><span className="mb-1.5 block text-xs font-bold">Offer title</span><input required value={draft.title} onChange={(event) => update('title', event.target.value)} placeholder={isServiceCard ? 'Signature blowout gift card' : isBookable ? 'Book your next color refresh' : 'The Sunday reset: blowout + treatment'} className={fieldClass} data-testid="input-create-deal-title" /></label>
+            <label><span className="mb-1.5 block text-xs font-bold">Category</span><select value={draft.category} onChange={(event) => update('category', event.target.value)} className={fieldClass} data-testid="select-create-deal-category"><option>Hair</option><option>Skin</option><option>Nails</option></select></label>
+            <label><span className="mb-1.5 block text-xs font-bold">Neighborhood or city</span><input required value={draft.city} onChange={(event) => update('city', event.target.value)} className={fieldClass} data-testid="input-create-deal-city" /></label>
+            {(isServiceCard || isBookable) && <label className="sm:col-span-2"><span className="mb-1.5 block text-xs font-bold">Specific service included</span><input required value={draft.serviceName} onChange={(event) => update('serviceName', event.target.value)} placeholder="60-minute signature facial" className={fieldClass} data-testid="input-create-deal-service" /><span className="mt-1.5 block text-[11px] text-muted-foreground">{isServiceCard ? 'This is the service the salon will honor, regardless of its price later.' : 'This is the service customers will eventually book online.'}</span></label>}
+            {isCashCard && <label><span className="mb-1.5 block text-xs font-bold">Gift card value</span><div className={moneyFieldClass}><span className="text-sm text-muted-foreground">$</span><input required min="1" type="number" value={draft.giftCardValue} onChange={(event) => update('giftCardValue', event.target.value)} className="w-full bg-transparent pl-1 text-sm outline-none" data-testid="input-create-deal-gift-value" /></div></label>}
+            {!isServiceCard && <label><span className="mb-1.5 block text-xs font-bold">Regular price</span><div className={moneyFieldClass}><span className="text-sm text-muted-foreground">$</span><input required min="1" type="number" value={draft.regularPrice} onChange={(event) => update('regularPrice', event.target.value)} className="w-full bg-transparent pl-1 text-sm outline-none" data-testid="input-create-deal-regular-price" /></div></label>}
+            <label><span className="mb-1.5 block text-xs font-bold">{isCashCard ? 'Customer pays' : isServiceCard ? 'Gift card price' : 'Offer price'}</span><div className={moneyFieldClass}><span className="text-sm text-muted-foreground">$</span><input required min="1" type="number" value={draft.customerPrice} onChange={(event) => update('customerPrice', event.target.value)} className="w-full bg-transparent pl-1 text-sm outline-none" data-testid="input-create-deal-customer-price" /></div></label>
+            <label><span className="mb-1.5 block text-xs font-bold">Available vouchers</span><input required min="1" type="number" value={draft.capacity} onChange={(event) => update('capacity', event.target.value)} className={fieldClass} data-testid="input-create-deal-capacity" /></label>
+            <label><span className="mb-1.5 block text-xs font-bold">Offer ends</span><input required min={new Date().toISOString().slice(0, 10)} type="date" value={draft.expiresAt} onChange={(event) => update('expiresAt', event.target.value)} className={fieldClass} data-testid="input-create-deal-expiry" /></label>
+            {isServiceCard && <label className="sm:col-span-2"><span className="mb-1.5 block text-xs font-bold">Service description <span className="font-normal text-muted-foreground">(optional)</span></span><textarea value={draft.serviceDescription} onChange={(event) => update('serviceDescription', event.target.value)} placeholder="What should customers know about the service?" rows={3} className="w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" data-testid="textarea-create-deal-service-description" /></label>}
+            <label className="sm:col-span-2"><span className="mb-1.5 block text-xs font-bold">Description <span className="font-normal text-muted-foreground">(optional)</span></span><textarea value={draft.description} onChange={(event) => update('description', event.target.value)} placeholder="Tell customers what makes this offer worth a visit." rows={4} className="w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" data-testid="textarea-create-deal-description" /></label>
+            <label className="sm:col-span-2"><span className="mb-1.5 block text-xs font-bold">Fine print <span className="font-normal text-muted-foreground">(optional)</span></span><textarea value={draft.finePrint} onChange={(event) => update('finePrint', event.target.value)} placeholder="Redemption windows, new-client restrictions, or anything else customers should know." rows={3} className="w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" data-testid="textarea-create-deal-fine-print" /></label>
+          </div>
+        </section>
+        {error && <p className="rounded-xl bg-destructive/10 px-4 py-3 text-xs font-semibold text-destructive" role="alert" data-testid="status-create-deal-error">{error}</p>}
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <Link href="/salon" className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground" data-testid="button-cancel-create-page">Cancel</Link>
+          <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs font-bold text-primary-foreground transition-transform hover:-translate-y-0.5" data-testid="button-publish-create-page">Publish deal <ArrowRight size={15} /></button>
+        </div>
+      </div>
+
+      <aside className="lg:sticky lg:top-24">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+          <p className="text-[10px] font-bold uppercase tracking-[.18em] text-primary">Your offer type</p>
+          <div className="mt-4 flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-primary">{selectedOffer.icon}</span><div><h2 className="font-serif text-xl font-bold leading-tight">{selectedOffer.label}</h2><p className="mt-1 text-xs leading-relaxed text-muted-foreground">{selectedOffer.description}</p></div></div>
+          <div className="my-5 border-t border-border" />
+          <p className="text-xs font-bold">Before you publish</p>
+          <ul className="mt-4 space-y-3 text-xs text-muted-foreground">
+            <li className="flex items-start gap-2"><Check size={14} className="mt-0.5 shrink-0 text-primary" /> Be clear about what the voucher includes.</li>
+            <li className="flex items-start gap-2"><Check size={14} className="mt-0.5 shrink-0 text-primary" /> Set a capacity your team can comfortably honor.</li>
+            <li className="flex items-start gap-2"><Check size={14} className="mt-0.5 shrink-0 text-primary" /> Keep redemption rules easy to understand.</li>
+          </ul>
+          {isBookable && <div className="mt-5 rounded-xl bg-muted p-4 text-xs leading-relaxed text-muted-foreground"><CalendarCheck size={16} className="mb-2 text-primary" /><p>Bookable deals are saved as placeholders for now. Online booking onboarding will be added later.</p></div>}
+        </div>
+      </aside>
+    </form>
+  </main><ModePill /></SalonShell>;
+}
+
 type DealDraft = { title: string; category: string; originalPrice: string; dealPrice: string; capacity: string; city: string };
 const emptyDealDraft: DealDraft = { title: '', category: 'Hair', originalPrice: '120', dealPrice: '72', capacity: '30', city: 'Brooklyn, NY' };
 
@@ -239,7 +441,7 @@ export function SalonConsolePage() {
     const dealPrice = Math.min(originalPrice, Math.max(1, Number(draft.dealPrice)));
     const capacity = Math.max(1, Number(draft.capacity));
     const discountPercent = Math.max(1, Math.round((1 - dealPrice / originalPrice) * 100));
-    const image = draft.category === 'Skin' ? '/images/editorial-facial.jpg' : draft.category === 'Nails' ? '/images/editorial-nails.jpg' : '/images/editorial-hair.jpg';
+     const image = draft.category === 'Skin' ? '/images/editorial-facial.jpg' : draft.category === 'Nails' ? '/images/editorial-nails.jpg' : '/images/editorial-hair.jpg';
     const id = `${draft.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'new-deal'}-${Date.now()}`;
     const endsAt = new Date();
     endsAt.setDate(endsAt.getDate() + 30);
@@ -271,7 +473,7 @@ export function SalonConsolePage() {
     setNotice(status === 'paused' ? 'Offer paused. It is hidden from customers.' : status === 'active' ? 'Offer is live again.' : 'Offer archived. Existing vouchers are unchanged.');
     window.setTimeout(() => setNotice(''), 3000);
   };
-  return <SalonShell><main className="mx-auto max-w-[1240px] px-5 pb-8 pt-10 lg:px-8 lg:pt-16"><div className="flex flex-col justify-between gap-6 md:flex-row md:items-end"><div><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.18em] text-primary"><StoreIcon /> Salon console</p><h1 className="mt-2 font-serif text-5xl font-bold tracking-[-.06em]">Good morning, Saffron.</h1><p className="mt-3 text-sm text-muted-foreground">A clear view of your offers and today’s chair-filling wins.</p></div><button onClick={() => setShowCreate(true)} className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-xs font-bold text-primary-foreground transition-transform hover:-translate-y-0.5" data-testid="button-create-deal"><Sparkles size={15} /> Create a new deal</button></div>
+  return <SalonShell><main className="mx-auto max-w-[1240px] px-5 pb-8 pt-10 lg:px-8 lg:pt-16"><div className="flex flex-col justify-between gap-6 md:flex-row md:items-end"><div><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.18em] text-primary"><StoreIcon /> Salon console</p><h1 className="mt-2 font-serif text-5xl font-bold tracking-[-.06em]">Good morning, Saffron.</h1><p className="mt-3 text-sm text-muted-foreground">A clear view of your offers and today’s chair-filling wins.</p></div><Link href="/salon/deals/new" className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-xs font-bold text-primary-foreground transition-transform hover:-translate-y-0.5" data-testid="button-create-deal"><Sparkles size={15} /> Create a new deal</Link></div>
     <section className="mt-9 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Metric label="Deal revenue" value="$2,184" change="+18.4%" icon={<TrendingUp size={17} />} /><Metric label="Vouchers sold" value="149" change="+12 this week" icon={<Ticket size={17} />} /><Metric label="Redemption rate" value="72%" change="+6.2%" icon={<BadgeCheck size={17} />} /><Metric label="Quiet chairs filled" value="34" change="this month" icon={<CalendarDays size={17} />} /></section>
      <section className="mt-10 grid gap-8 lg:grid-cols-[1fr_360px]"><div><div className="mb-4 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-primary">Your live edit</p><h2 className="mt-1 font-serif text-2xl font-bold">Active deals</h2></div><button className="inline-flex items-center gap-1 text-xs font-bold text-muted-foreground" data-testid="button-manage-deals">Manage all <ArrowRight size={13} /></button></div><div className="space-y-3">{activeDeals.slice(0, 3).map((deal) => <div key={deal.id} className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center"><img src={deal.image} alt="" className="h-20 w-full rounded-xl object-cover sm:w-28" /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><div className="flex min-w-0 items-center gap-2"><h3 className="truncate font-serif text-lg font-bold">{deal.title}</h3>{deal.status === 'paused' && <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[9px] font-bold uppercase tracking-[.12em] text-muted-foreground">Paused</span>}</div><div className="flex shrink-0 items-center gap-1"><button onClick={() => setEditingDeal(deal)} className="grid h-8 w-8 place-items-center rounded-full hover:bg-muted" aria-label={`Edit ${deal.title}`} data-testid={`button-edit-deal-${deal.id}`}><Pencil size={14} /></button><button onClick={() => changeDealStatus(deal.id, deal.status === 'active' ? 'paused' : 'active')} className="grid h-8 w-8 place-items-center rounded-full hover:bg-muted" aria-label={deal.status === 'active' ? `Pause ${deal.title}` : `Resume ${deal.title}`} data-testid={`button-toggle-deal-${deal.id}`}>{deal.status === 'active' ? <Pause size={14} /> : <Play size={14} />}</button><button onClick={() => changeDealStatus(deal.id, 'archived')} className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label={`Archive ${deal.title}`} data-testid={`button-archive-deal-${deal.id}`}><Archive size={14} /></button></div></div><p className="mt-1 text-xs text-muted-foreground">{deal.purchasedCount} sold · {deal.capacity - deal.purchasedCount} spots left · ends {dateLabel(deal.endsAt)}</p><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted"><div className={`h-full rounded-full ${deal.status === 'paused' ? 'bg-muted-foreground' : 'bg-primary'}`} style={{ width: `${Math.round(deal.purchasedCount / deal.capacity * 100)}%` }} /></div></div><div className="text-right"><p className="font-serif text-xl font-bold">{money(deal.dealPrice)}</p><p className="text-[10px] text-muted-foreground">per voucher</p></div></div>)}</div></div>
       <div className="rounded-2xl bg-foreground p-6 text-background"><p className="text-xs font-bold uppercase tracking-[.16em] text-accent">Fill the quiet hours</p><h2 className="mt-3 font-serif text-3xl font-bold leading-[.95]">Your next great regular is nearby.</h2><p className="mt-4 text-xs leading-relaxed text-background/65">Deals are a low-lift way to turn a quiet Tuesday into a first visit—and a first visit into a regular.</p><button className="mt-7 flex items-center gap-2 text-xs font-bold text-accent" data-testid="button-learn-deals">See how goodroom works <ArrowRight size={14} /></button></div></section>

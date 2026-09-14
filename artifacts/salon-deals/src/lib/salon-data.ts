@@ -1,12 +1,14 @@
 export type DealStatus = 'active' | 'paused' | 'archived' | 'sold-out' | 'expired';
 export type VoucherStatus = 'active' | 'used' | 'expired';
+export type OfferType = 'flat-rate' | 'cash-gift-card' | 'service-gift-card' | 'bookable';
 
 export type Deal = {
   id: string; title: string; salonName: string; category: string; city: string;
   rating: number; reviewCount: number; image: string; originalPrice: number;
   dealPrice: number; discountPercent: number; savings: number; purchasedCount: number;
   capacity: number; endsAt: string; description: string; highlights: string[];
-  finePrint: string; status: DealStatus;
+  finePrint: string; status: DealStatus; offerType?: OfferType;
+  serviceName?: string; giftCardValue?: number;
 };
 
 export type Voucher = {

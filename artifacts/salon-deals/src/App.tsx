@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import {
   DealDetailPage,
+  CreateDealPage,
   MarketplacePage,
   SalonConsolePage,
   WalletPage,
@@ -28,6 +29,7 @@ function Router() {
         <Route path="/" component={MarketplacePage} />
         <Route path="/deal/:id" component={DealDetailPage} />
         <Route path="/wallet" component={WalletPage} />
+        <Route path="/salon/deals/new" component={CreateDealPage} />
         <Route path="/salon" component={SalonConsolePage} />
         <Route component={NotFound} />
       </Switch>
