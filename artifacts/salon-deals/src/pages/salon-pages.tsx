@@ -1,16 +1,46 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'wouter';
 import { QRCodeSVG } from 'qrcode.react';
 import { Archive, ArrowLeft, ArrowRight, BadgeCheck, CalendarDays, CalendarCheck, Check, ChevronUp, Clock3, Copy, DollarSign, Gift, Heart, Info, MapPin, MoreHorizontal, Pause, Pencil, Play, Plus, Search, Scissors, ShieldCheck, SlidersHorizontal, Sparkles, Star, Ticket, TrendingUp, UsersRound, X } from 'lucide-react';
 import { FavoriteButton, ModePill, SalonShell, SearchBox } from '@/components/salon-shell';
-import { Deal, OfferType, Voucher, VoucherStatus, loadLocal, saveLocal, seededDeals, seededVouchers } from '@/lib/salon-data';
+import { Deal, OfferType, Voucher, VoucherStatus, dealDateInputValue, dealEndAt, dealStartAt, getDealAvailability, loadLocal, saveLocal, seededDeals, seededVouchers } from '@/lib/salon-data';
 
 const categories = ['All finds', 'Hair', 'Skin', 'Nails'];
 const money = (n: number) => `$${n}`;
 const dateLabel = (date: string) => new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(date));
+const availabilityLabel: Record<ReturnType<typeof getDealAvailability>, string> = {
+  scheduled: 'Starts soon',
+  active: 'Live now',
+  'sold-out': 'Sold out',
+  expired: 'Ended',
+  paused: 'Paused',
+  archived: 'Archived',
+};
+
+function Countdown({ endsAt, compact = false }: { endsAt: string; compact?: boolean }) {
+  const [remaining, setRemaining] = useState(() => Math.max(0, new Date(endsAt).getTime() - Date.now()));
+  useEffect(() => {
+    const update = () => setRemaining(Math.max(0, new Date(endsAt).getTime() - Date.now()));
+    update();
+    const timer = window.setInterval(update, 1000);
+    return () => window.clearInterval(timer);
+  }, [endsAt]);
+  if (!remaining) return <span className={compact ? 'font-bold' : 'text-destructive'}>Ended</span>;
+  const totalSeconds = Math.floor(remaining / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const value = days > 0
+    ? `${days}d ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m`
+    : `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  return <span className={compact ? 'font-mono font-bold tabular-nums' : 'font-mono font-bold tabular-nums'}>{value}</span>;
+}
 
 function DealCard({ deal, favorite, toggle }: { deal: Deal; favorite: boolean; toggle: () => void }) {
   const soldPercent = Math.round((deal.purchasedCount / deal.capacity) * 100);
+  const availability = getDealAvailability(deal);
+  const soldOut = availability === 'sold-out';
   return <Link href={`/deal/${deal.id}`} className="deal-card group block overflow-hidden rounded-2xl border border-border bg-card" data-testid={`card-deal-${deal.id}`}>
     <div className="relative aspect-[1.28] overflow-hidden bg-muted">
       <img src={deal.image} alt="" className="deal-image h-full w-full object-cover" />
@@ -18,7 +48,7 @@ function DealCard({ deal, favorite, toggle }: { deal: Deal; favorite: boolean; t
         <span className="rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-[.12em] text-foreground">{deal.discountPercent}% off</span>
         <FavoriteButton id={deal.id} active={favorite} onClick={toggle} />
       </div>
-      <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-foreground/85 px-2.5 py-1 text-[10px] font-semibold text-background backdrop-blur-sm"><Clock3 size={12} /> Ends soon</div>
+        <div className={`absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold backdrop-blur-sm ${soldOut ? 'bg-destructive text-destructive-foreground' : 'bg-foreground/85 text-background'}`}><Clock3 size={12} /> {soldOut ? 'Sold out' : availability === 'scheduled' ? `Starts ${dateLabel(deal.startsAt)}` : <><span>Ends in</span> <Countdown endsAt={deal.endsAt} compact /></>}</div>
     </div>
     <div className="p-4">
       <div className="mb-2 flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-[.12em] text-muted-foreground"><span>{deal.category}</span><span className="flex items-center gap-1 normal-case tracking-normal text-foreground"><span className="text-accent">★</span> {deal.rating} <span className="font-normal text-muted-foreground">({deal.reviewCount})</span></span></div>
@@ -28,7 +58,7 @@ function DealCard({ deal, favorite, toggle }: { deal: Deal; favorite: boolean; t
         <div><span className="font-serif text-[22px] font-bold">{money(deal.dealPrice)}</span><span className="ml-2 text-xs text-muted-foreground line-through">{money(deal.originalPrice)}</span></div>
         <span className="text-xs font-bold text-primary">Save {money(deal.savings)}</span>
       </div>
-      <div className="mt-3 flex items-center gap-2"><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-secondary" style={{ width: `${soldPercent}%` }} /></div><span className="text-[10px] font-medium text-muted-foreground">{deal.capacity - deal.purchasedCount} left</span></div>
+       <div className="mt-3 flex items-center gap-2"><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"><div className={`h-full rounded-full ${soldOut ? 'bg-destructive' : 'bg-secondary'}`} style={{ width: `${Math.min(100, soldPercent)}%` }} /></div><span className={`text-[10px] font-medium ${soldOut ? 'text-destructive' : 'text-muted-foreground'}`}>{soldOut ? 'Sold out' : `${deal.capacity - deal.purchasedCount} left`}</span></div>
     </div>
   </Link>;
 }
@@ -46,13 +76,14 @@ export function MarketplacePage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const deals = loadLocal<Deal[]>('certxa-deals', seededDeals);
-  const featuredDeal = deals.find((deal) => deal.status === 'active') ?? seededDeals[0];
+  const visibleDeals = deals.filter((deal) => ['active', 'scheduled', 'sold-out'].includes(getDealAvailability(deal)));
+  const featuredDeal = visibleDeals.find((deal) => getDealAvailability(deal) === 'active') ?? visibleDeals[0] ?? seededDeals[0];
   const filtered = useMemo(() => {
-    const matches = deals.filter((deal) => deal.status === 'active' && (category === 'All finds' || deal.category === category) && (!savedOnly || favorites.includes(deal.id)) && `${deal.title} ${deal.salonName} ${deal.city} ${deal.category}`.toLowerCase().includes(search.toLowerCase()));
+    const matches = visibleDeals.filter((deal) => (category === 'All finds' || deal.category === category) && (!savedOnly || favorites.includes(deal.id)) && `${deal.title} ${deal.salonName} ${deal.city} ${deal.category}`.toLowerCase().includes(search.toLowerCase()));
     if (sort === 'price') return [...matches].sort((a, b) => a.dealPrice - b.dealPrice);
     if (sort === 'ending') return [...matches].sort((a, b) => new Date(a.endsAt).getTime() - new Date(b.endsAt).getTime());
     return matches;
-  }, [category, deals, favorites, savedOnly, search, sort]);
+  }, [category, favorites, savedOnly, search, sort, visibleDeals]);
   const toggle = (id: string) => { const next = favorites.includes(id) ? favorites.filter((x) => x !== id) : [...favorites, id]; setFavorites(next); saveLocal('certxa-favorites', next); };
   const chooseCategory = (next: string) => { setLoading(true); setCategory(next); window.setTimeout(() => setLoading(false), 240); };
   return <SalonShell><main>
@@ -112,17 +143,25 @@ function VoucherModal({ voucher, onClose }: { voucher: Voucher; onClose: () => v
 export function DealDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
-  const deal = seededDeals.find((item) => item.id === id) ?? seededDeals[0];
+  const [deal, setDeal] = useState<Deal>(() => loadLocal<Deal[]>('certxa-deals', seededDeals).find((item) => item.id === id) ?? seededDeals[0]);
   const [quantity, setQuantity] = useState(1);
   const [favorites, setFavorites] = useState<string[]>(() => loadLocal('goodroom-favorites', []));
   const [purchasing, setPurchasing] = useState(false);
   const [showDealDetails, setShowDealDetails] = useState(true);
   const [showFinePrint, setShowFinePrint] = useState(false);
+  const availability = getDealAvailability(deal);
+  const remaining = Math.max(0, deal.capacity - deal.purchasedCount);
+  const unavailable = availability !== 'active';
   const buy = () => {
+    if (unavailable || quantity > remaining) return;
     setPurchasing(true);
     window.setTimeout(() => {
       const vouchers = loadLocal<Voucher[]>('goodroom-vouchers', seededVouchers);
       const voucher: Voucher = { id: `v-${Date.now()}`, dealId: deal.id, dealTitle: deal.title, salonName: deal.salonName, customerName: 'Mara Chen', purchaseDate: new Date().toISOString().slice(0, 10), expiresAt: deal.endsAt.slice(0, 10), code: `${deal.id.slice(0, 3).toUpperCase()}-${Math.floor(Math.random() * 89 + 10)}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`, status: 'active', qrSeed: Date.now().toString() };
+      const deals = loadLocal<Deal[]>('certxa-deals', seededDeals);
+      const updatedDeal = { ...deal, purchasedCount: Math.min(deal.capacity, deal.purchasedCount + quantity) };
+      saveLocal('certxa-deals', deals.map((item) => item.id === deal.id ? updatedDeal : item));
+      setDeal(updatedDeal);
       saveLocal('goodroom-vouchers', [voucher, ...vouchers]); setPurchasing(false); setLocation('/wallet');
     }, 600);
   };
@@ -171,7 +210,7 @@ export function DealDetailPage() {
           </div>}
         </section>
       </div>
-      <aside className="lg:pt-20"><div className="sticky top-24 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-7"><div className="flex items-end justify-between border-b border-border pb-5"><div><span className="font-serif text-4xl font-bold">{money(deal.dealPrice)}</span><span className="ml-2 text-sm text-muted-foreground line-through">{money(deal.originalPrice)}</span></div><span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold">Save {money(deal.savings)}</span></div><div className="mt-5 flex items-center justify-between text-sm"><span className="text-muted-foreground">How many?</span><div className="flex items-center gap-3 rounded-full border border-border px-2 py-1"><button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="grid h-6 w-6 place-items-center text-lg" data-testid="button-quantity-minus">−</button><span className="w-5 text-center font-semibold" data-testid="text-quantity">{quantity}</span><button onClick={() => setQuantity(Math.min(4, quantity + 1))} className="grid h-6 w-6 place-items-center text-lg" data-testid="button-quantity-plus">+</button></div></div><button onClick={buy} disabled={purchasing} className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-60" data-testid="button-buy-deal">{purchasing ? 'Reserving your find…' : `Get this deal · ${money(deal.dealPrice * quantity)}`} {!purchasing && <ArrowRight size={16} />}</button><p className="mt-3 text-center text-[11px] text-muted-foreground">Instant voucher · no hidden fees</p><div className="mt-7 rounded-xl bg-muted p-4"><div className="flex items-center gap-2 text-xs font-bold"><Clock3 size={14} className="text-primary" /> This offer has a short shelf life</div><p className="mt-2 text-xs leading-relaxed text-muted-foreground">47 neighbors already claimed it. Offer closes {dateLabel(deal.endsAt)}.</p><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-card"><div className="h-full w-[78%] rounded-full bg-secondary" /></div></div><div className="mt-5 flex items-start gap-3 text-xs text-muted-foreground"><ShieldCheck size={16} className="mt-0.5 shrink-0 text-primary" /><span>Pay securely and show your voucher at {deal.salonName}. Your voucher lives in your wallet.</span></div></div></aside>
+       <aside className="lg:pt-20"><div className="sticky top-24 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-7"><div className="flex items-end justify-between border-b border-border pb-5"><div><span className="font-serif text-4xl font-bold">{money(deal.dealPrice)}</span><span className="ml-2 text-sm text-muted-foreground line-through">{money(deal.originalPrice)}</span></div><span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold">Save {money(deal.savings)}</span></div><div className="mt-5 flex items-center justify-between text-sm"><span className="text-muted-foreground">How many?</span><div className="flex items-center gap-3 rounded-full border border-border px-2 py-1"><button onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={unavailable} className="grid h-6 w-6 place-items-center text-lg disabled:opacity-40" data-testid="button-quantity-minus">−</button><span className="w-5 text-center font-semibold" data-testid="text-quantity">{quantity}</span><button onClick={() => setQuantity(Math.min(4, remaining, quantity + 1))} disabled={unavailable || quantity >= remaining} className="grid h-6 w-6 place-items-center text-lg disabled:opacity-40" data-testid="button-quantity-plus">+</button></div></div><button onClick={buy} disabled={purchasing || unavailable} className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60" data-testid="button-buy-deal">{purchasing ? 'Reserving your find…' : availability === 'sold-out' ? 'Sold out' : availability === 'scheduled' ? 'Not live yet' : availability === 'expired' ? 'Offer ended' : `Get this deal · ${money(deal.dealPrice * quantity)}`} {!purchasing && !unavailable && <ArrowRight size={16} />}</button><p className="mt-3 text-center text-[11px] text-muted-foreground">{availability === 'active' ? `${remaining} voucher${remaining === 1 ? '' : 's'} left · instant voucher` : `${availabilityLabel[availability]} · this offer cannot be purchased`}</p><div className="mt-7 rounded-xl bg-muted p-4"><div className="flex items-center gap-2 text-xs font-bold"><Clock3 size={14} className="text-primary" /> {availability === 'sold-out' ? 'All vouchers claimed' : 'This offer has a short shelf life'}</div><p className="mt-2 text-xs leading-relaxed text-muted-foreground">{deal.purchasedCount} neighbors already claimed it. Offer closes {dateLabel(deal.endsAt)} at 4:59 PM.</p><div className="mt-3 flex items-center justify-between rounded-lg bg-card px-3 py-2 text-xs"><span className="text-muted-foreground">Time remaining</span><Countdown endsAt={deal.endsAt} compact /></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-card"><div className={`h-full rounded-full ${availability === 'sold-out' ? 'bg-destructive' : 'bg-secondary'}`} style={{ width: `${Math.min(100, Math.round(deal.purchasedCount / deal.capacity * 100))}%` }} /></div></div><div className="mt-5 flex items-start gap-3 text-xs text-muted-foreground"><ShieldCheck size={16} className="mt-0.5 shrink-0 text-primary" /><span>Pay securely and show your voucher at {deal.salonName}. Your voucher lives in your wallet.</span></div></div></aside>
     </div>
     <div className="fixed inset-x-3 bottom-[5.5rem] z-30 rounded-2xl border border-border bg-card/95 p-3 shadow-[var(--shadow-float)] backdrop-blur-xl md:hidden" data-testid="mobile-purchase-bar">
       <div className="flex items-center gap-3">
@@ -213,7 +252,8 @@ type DealCreationDraft = {
   customerPrice: string;
   giftCardValue: string;
   capacity: string;
-  expiresAt: string;
+  startsAt: string;
+  endsAt: string;
   description: string;
   finePrint: string;
 };
@@ -232,6 +272,10 @@ function dateInThirtyDays() {
 }
 
 function emptyDealCreationDraft(): DealCreationDraft {
+  const start = new Date();
+  start.setDate(start.getDate() + 1);
+  const end = new Date();
+  end.setDate(end.getDate() + 31);
   return {
     offerType: 'flat-rate',
     title: '',
@@ -243,7 +287,8 @@ function emptyDealCreationDraft(): DealCreationDraft {
     customerPrice: '72',
     giftCardValue: '100',
     capacity: '30',
-    expiresAt: dateInThirtyDays(),
+    startsAt: start.toISOString().slice(0, 10),
+    endsAt: end.toISOString().slice(0, 10),
     description: '',
     finePrint: '',
   };
@@ -276,13 +321,15 @@ export function CreateDealPage() {
     if (!isServiceCard && (!regularPrice || regularPrice < 1)) return setError('Enter the regular price for this offer.');
     if (isCashCard && (!giftCardValue || giftCardValue < 1)) return setError('Enter the value customers can spend at your salon.');
     if ((isServiceCard || isBookable) && !draft.serviceName.trim()) return setError('Add the specific service included in this offer.');
+    const startsAt = dealStartAt(draft.startsAt);
+    const endsAt = dealEndAt(draft.endsAt);
+    if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || startsAt >= endsAt) return setError('Choose an end date after the start date.');
 
     const deals = loadLocal<Deal[]>('certxa-deals', seededDeals);
     const originalPrice = isCashCard ? giftCardValue : isServiceCard ? customerPrice : regularPrice;
     const discountPercent = originalPrice > customerPrice ? Math.max(1, Math.round((1 - customerPrice / originalPrice) * 100)) : 0;
     const image = draft.category === 'Skin' ? '/images/editorial-facial.jpg' : draft.category === 'Nails' ? '/images/editorial-nails.jpg' : '/images/editorial-hair.jpg';
     const id = `${draft.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'new-deal'}-${Date.now()}`;
-    const endsAt = new Date(`${draft.expiresAt}T23:59:59`);
     const defaultDescription = isCashCard
       ? `A ${money(giftCardValue)} salon gift card to use toward any eligible service at ${draft.city.trim()}.`
       : isServiceCard
@@ -305,7 +352,8 @@ export function CreateDealPage() {
       savings: Math.max(0, originalPrice - customerPrice),
       purchasedCount: 0,
       capacity: Math.round(capacity),
-      endsAt: Number.isNaN(endsAt.getTime()) ? new Date(Date.now() + 30 * 86400000).toISOString() : endsAt.toISOString(),
+       startsAt: startsAt.toISOString(),
+       endsAt: endsAt.toISOString(),
       description: draft.description.trim() || defaultDescription,
       highlights: isCashCard
         ? [`${money(giftCardValue)} to spend at the salon`, 'Flexible across eligible services', 'Digital voucher delivered instantly']
@@ -373,7 +421,8 @@ export function CreateDealPage() {
             {!isServiceCard && <label><span className="mb-1.5 block text-xs font-bold">Regular price</span><div className={moneyFieldClass}><span className="text-sm text-muted-foreground">$</span><input required min="1" type="number" value={draft.regularPrice} onChange={(event) => update('regularPrice', event.target.value)} className="w-full bg-transparent pl-1 text-sm outline-none" data-testid="input-create-deal-regular-price" /></div></label>}
             <label><span className="mb-1.5 block text-xs font-bold">{isCashCard ? 'Customer pays' : isServiceCard ? 'Gift card price' : 'Offer price'}</span><div className={moneyFieldClass}><span className="text-sm text-muted-foreground">$</span><input required min="1" type="number" value={draft.customerPrice} onChange={(event) => update('customerPrice', event.target.value)} className="w-full bg-transparent pl-1 text-sm outline-none" data-testid="input-create-deal-customer-price" /></div></label>
             <label><span className="mb-1.5 block text-xs font-bold">Available vouchers</span><input required min="1" type="number" value={draft.capacity} onChange={(event) => update('capacity', event.target.value)} className={fieldClass} data-testid="input-create-deal-capacity" /></label>
-            <label><span className="mb-1.5 block text-xs font-bold">Offer ends</span><input required min={new Date().toISOString().slice(0, 10)} type="date" value={draft.expiresAt} onChange={(event) => update('expiresAt', event.target.value)} className={fieldClass} data-testid="input-create-deal-expiry" /></label>
+             <label><span className="mb-1.5 block text-xs font-bold">Offer starts</span><input required type="date" value={draft.startsAt} onChange={(event) => update('startsAt', event.target.value)} className={fieldClass} data-testid="input-create-deal-start-date" /><span className="mt-1.5 block text-[11px] text-muted-foreground">Goes live at 5:00 PM on this date.</span></label>
+             <label><span className="mb-1.5 block text-xs font-bold">Offer ends</span><input required min={draft.startsAt} type="date" value={draft.endsAt} onChange={(event) => update('endsAt', event.target.value)} className={fieldClass} data-testid="input-create-deal-end-date" /><span className="mt-1.5 block text-[11px] text-muted-foreground">Closes at 4:59 PM on this date.</span></label>
             {isServiceCard && <label className="sm:col-span-2"><span className="mb-1.5 block text-xs font-bold">Service description <span className="font-normal text-muted-foreground">(optional)</span></span><textarea value={draft.serviceDescription} onChange={(event) => update('serviceDescription', event.target.value)} placeholder="What should customers know about the service?" rows={3} className="w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" data-testid="textarea-create-deal-service-description" /></label>}
             <label className="sm:col-span-2"><span className="mb-1.5 block text-xs font-bold">Description <span className="font-normal text-muted-foreground">(optional)</span></span><textarea value={draft.description} onChange={(event) => update('description', event.target.value)} placeholder="Tell customers what makes this offer worth a visit." rows={4} className="w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" data-testid="textarea-create-deal-description" /></label>
             <label className="sm:col-span-2"><span className="mb-1.5 block text-xs font-bold">Fine print <span className="font-normal text-muted-foreground">(optional)</span></span><textarea value={draft.finePrint} onChange={(event) => update('finePrint', event.target.value)} placeholder="Redemption windows, new-client restrictions, or anything else customers should know." rows={3} className="w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10" data-testid="textarea-create-deal-fine-print" /></label>
@@ -404,11 +453,11 @@ export function CreateDealPage() {
   </main><ModePill /></SalonShell>;
 }
 
-type DealDraft = { title: string; category: string; originalPrice: string; dealPrice: string; capacity: string; city: string };
-const emptyDealDraft: DealDraft = { title: '', category: 'Hair', originalPrice: '120', dealPrice: '72', capacity: '30', city: 'Brooklyn, NY' };
+type DealDraft = { title: string; category: string; originalPrice: string; dealPrice: string; capacity: string; city: string; startsAt: string; endsAt: string };
+const emptyDealDraft: DealDraft = { title: '', category: 'Hair', originalPrice: '120', dealPrice: '72', capacity: '30', city: 'Brooklyn, NY', startsAt: new Date().toISOString().slice(0, 10), endsAt: dateInThirtyDays() };
 
 function CreateDealModal({ onClose, onCreate, deal }: { onClose: () => void; onCreate: (draft: DealDraft) => void; deal?: Deal }) {
-  const [draft, setDraft] = useState<DealDraft>(() => deal ? { title: deal.title, category: deal.category, originalPrice: String(deal.originalPrice), dealPrice: String(deal.dealPrice), capacity: String(deal.capacity), city: deal.city } : emptyDealDraft);
+  const [draft, setDraft] = useState<DealDraft>(() => deal ? { title: deal.title, category: deal.category, originalPrice: String(deal.originalPrice), dealPrice: String(deal.dealPrice), capacity: String(deal.capacity), city: deal.city, startsAt: dealDateInputValue(deal.startsAt), endsAt: dealDateInputValue(deal.endsAt) } : emptyDealDraft);
   const update = (key: keyof DealDraft, value: string) => setDraft((current) => ({ ...current, [key]: value }));
   return <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/50 p-4 backdrop-blur-sm" onClick={onClose}>
     <form onSubmit={(event) => { event.preventDefault(); onCreate(draft); }} onClick={(event) => event.stopPropagation()} className="w-full max-w-lg rounded-3xl border border-border bg-card p-6 shadow-2xl sm:p-8" data-testid="dialog-create-deal">
@@ -420,6 +469,8 @@ function CreateDealModal({ onClose, onCreate, deal }: { onClose: () => void; onC
         <label><span className="mb-1.5 block text-xs font-bold">Regular price</span><div className="flex h-11 items-center rounded-xl border border-border bg-background px-3"><span className="text-sm text-muted-foreground">$</span><input required min="1" type="number" value={draft.originalPrice} onChange={(event) => update('originalPrice', event.target.value)} className="w-full bg-transparent pl-1 text-sm outline-none" data-testid="input-new-deal-original-price" /></div></label>
         <label><span className="mb-1.5 block text-xs font-bold">Offer price</span><div className="flex h-11 items-center rounded-xl border border-border bg-background px-3"><span className="text-sm text-muted-foreground">$</span><input required min="1" type="number" value={draft.dealPrice} onChange={(event) => update('dealPrice', event.target.value)} className="w-full bg-transparent pl-1 text-sm outline-none" data-testid="input-new-deal-price" /></div></label>
         <label><span className="mb-1.5 block text-xs font-bold">Voucher capacity</span><input required min="1" type="number" value={draft.capacity} onChange={(event) => update('capacity', event.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary" data-testid="input-new-deal-capacity" /></label>
+         <label><span className="mb-1.5 block text-xs font-bold">Start date</span><input required type="date" value={draft.startsAt} onChange={(event) => update('startsAt', event.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary" data-testid="input-new-deal-start-date" /><span className="mt-1 block text-[10px] text-muted-foreground">Starts at 5:00 PM</span></label>
+         <label><span className="mb-1.5 block text-xs font-bold">End date</span><input required min={draft.startsAt} type="date" value={draft.endsAt} onChange={(event) => update('endsAt', event.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary" data-testid="input-new-deal-end-date" /><span className="mt-1 block text-[10px] text-muted-foreground">Ends at 4:59 PM</span></label>
       </div>
       <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button type="button" onClick={onClose} className="rounded-xl px-4 py-3 text-xs font-bold text-muted-foreground hover:text-foreground" data-testid="button-cancel-create-deal">Cancel</button><button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-bold text-primary-foreground transition-transform hover:-translate-y-0.5" data-testid="button-publish-deal"><Pencil size={15} /> {deal ? 'Save changes' : 'Publish offer'}</button></div>
     </form>
@@ -443,9 +494,13 @@ export function SalonConsolePage() {
     const discountPercent = Math.max(1, Math.round((1 - dealPrice / originalPrice) * 100));
      const image = draft.category === 'Skin' ? '/images/editorial-facial.jpg' : draft.category === 'Nails' ? '/images/editorial-nails.jpg' : '/images/editorial-hair.jpg';
     const id = `${draft.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'new-deal'}-${Date.now()}`;
-    const endsAt = new Date();
-    endsAt.setDate(endsAt.getDate() + 30);
-    const created: Deal = { id, title: draft.title.trim(), salonName: 'Saffron Studio', category: draft.category, city: draft.city.trim(), rating: 5, reviewCount: 0, image, originalPrice, dealPrice, discountPercent, savings: originalPrice - dealPrice, purchasedCount: 0, capacity, endsAt: endsAt.toISOString(), description: 'A limited-time offer from your local salon, made for a little more self-care in the week ahead.', highlights: ['Personalized service', 'Thoughtful salon experience', 'Signature finish'], finePrint: 'Valid for one person. Please book directly with the salon after purchasing.', status: 'active' };
+     const startsAt = dealStartAt(draft.startsAt);
+     const endsAt = dealEndAt(draft.endsAt);
+    if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || startsAt >= endsAt) {
+      setNotice('Choose an end date after the start date.');
+      return;
+    }
+     const created: Deal = { id, title: draft.title.trim(), salonName: 'Saffron Studio', category: draft.category, city: draft.city.trim(), rating: 5, reviewCount: 0, image, originalPrice, dealPrice, discountPercent, savings: originalPrice - dealPrice, purchasedCount: 0, capacity, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), description: 'A limited-time offer from your local salon, made for a little more self-care in the week ahead.', highlights: ['Personalized service', 'Thoughtful salon experience', 'Signature finish'], finePrint: 'Valid for one person. Please book directly with the salon after purchasing.', status: 'active' };
     const next = [created, ...deals];
     setDeals(next);
     saveLocal('certxa-deals', next);
@@ -459,7 +514,13 @@ export function SalonConsolePage() {
     const dealPrice = Math.min(originalPrice, Math.max(1, Number(draft.dealPrice)));
     const capacity = Math.max(1, Number(draft.capacity));
     const image = draft.category === 'Skin' ? '/images/editorial-facial.jpg' : draft.category === 'Nails' ? '/images/editorial-nails.jpg' : '/images/editorial-hair.jpg';
-    const next = deals.map((deal) => deal.id === editingDeal.id ? { ...deal, title: draft.title.trim(), category: draft.category, city: draft.city.trim(), originalPrice, dealPrice, discountPercent: Math.max(1, Math.round((1 - dealPrice / originalPrice) * 100)), savings: originalPrice - dealPrice, capacity, image } : deal);
+     const startsAt = dealStartAt(draft.startsAt);
+     const endsAt = dealEndAt(draft.endsAt);
+    if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || startsAt >= endsAt) {
+      setNotice('Choose an end date after the start date.');
+      return;
+    }
+     const next = deals.map((deal) => deal.id === editingDeal.id ? { ...deal, title: draft.title.trim(), category: draft.category, city: draft.city.trim(), originalPrice, dealPrice, discountPercent: Math.max(1, Math.round((1 - dealPrice / originalPrice) * 100)), savings: originalPrice - dealPrice, capacity, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), image } : deal);
     setDeals(next);
     saveLocal('certxa-deals', next);
     setEditingDeal(null);
@@ -475,7 +536,7 @@ export function SalonConsolePage() {
   };
   return <SalonShell><main className="mx-auto max-w-[1240px] px-5 pb-8 pt-10 lg:px-8 lg:pt-16"><div className="flex flex-col justify-between gap-6 md:flex-row md:items-end"><div><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.18em] text-primary"><StoreIcon /> Salon console</p><h1 className="mt-2 font-serif text-5xl font-bold tracking-[-.06em]">Good morning, Saffron.</h1><p className="mt-3 text-sm text-muted-foreground">A clear view of your offers and today’s chair-filling wins.</p></div><Link href="/salon/deals/new" className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-xs font-bold text-primary-foreground transition-transform hover:-translate-y-0.5" data-testid="button-create-deal"><Sparkles size={15} /> Create a new deal</Link></div>
     <section className="mt-9 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Metric label="Deal revenue" value="$2,184" change="+18.4%" icon={<TrendingUp size={17} />} /><Metric label="Vouchers sold" value="149" change="+12 this week" icon={<Ticket size={17} />} /><Metric label="Redemption rate" value="72%" change="+6.2%" icon={<BadgeCheck size={17} />} /><Metric label="Quiet chairs filled" value="34" change="this month" icon={<CalendarDays size={17} />} /></section>
-     <section className="mt-10 grid gap-8 lg:grid-cols-[1fr_360px]"><div><div className="mb-4 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-primary">Your live edit</p><h2 className="mt-1 font-serif text-2xl font-bold">Active deals</h2></div><button className="inline-flex items-center gap-1 text-xs font-bold text-muted-foreground" data-testid="button-manage-deals">Manage all <ArrowRight size={13} /></button></div><div className="space-y-3">{activeDeals.slice(0, 3).map((deal) => <div key={deal.id} className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center"><img src={deal.image} alt="" className="h-20 w-full rounded-xl object-cover sm:w-28" /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><div className="flex min-w-0 items-center gap-2"><h3 className="truncate font-serif text-lg font-bold">{deal.title}</h3>{deal.status === 'paused' && <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[9px] font-bold uppercase tracking-[.12em] text-muted-foreground">Paused</span>}</div><div className="flex shrink-0 items-center gap-1"><button onClick={() => setEditingDeal(deal)} className="grid h-8 w-8 place-items-center rounded-full hover:bg-muted" aria-label={`Edit ${deal.title}`} data-testid={`button-edit-deal-${deal.id}`}><Pencil size={14} /></button><button onClick={() => changeDealStatus(deal.id, deal.status === 'active' ? 'paused' : 'active')} className="grid h-8 w-8 place-items-center rounded-full hover:bg-muted" aria-label={deal.status === 'active' ? `Pause ${deal.title}` : `Resume ${deal.title}`} data-testid={`button-toggle-deal-${deal.id}`}>{deal.status === 'active' ? <Pause size={14} /> : <Play size={14} />}</button><button onClick={() => changeDealStatus(deal.id, 'archived')} className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label={`Archive ${deal.title}`} data-testid={`button-archive-deal-${deal.id}`}><Archive size={14} /></button></div></div><p className="mt-1 text-xs text-muted-foreground">{deal.purchasedCount} sold · {deal.capacity - deal.purchasedCount} spots left · ends {dateLabel(deal.endsAt)}</p><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted"><div className={`h-full rounded-full ${deal.status === 'paused' ? 'bg-muted-foreground' : 'bg-primary'}`} style={{ width: `${Math.round(deal.purchasedCount / deal.capacity * 100)}%` }} /></div></div><div className="text-right"><p className="font-serif text-xl font-bold">{money(deal.dealPrice)}</p><p className="text-[10px] text-muted-foreground">per voucher</p></div></div>)}</div></div>
+     <section className="mt-10 grid gap-8 lg:grid-cols-[1fr_360px]"><div><div className="mb-4 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-primary">Your live edit</p><h2 className="mt-1 font-serif text-2xl font-bold">Active deals</h2></div><button className="inline-flex items-center gap-1 text-xs font-bold text-muted-foreground" data-testid="button-manage-deals">Manage all <ArrowRight size={13} /></button></div><div className="space-y-3">{activeDeals.slice(0, 3).map((deal) => <div key={deal.id} className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center"><img src={deal.image} alt="" className="h-20 w-full rounded-xl object-cover sm:w-28" /><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><div className="flex min-w-0 items-center gap-2"><h3 className="truncate font-serif text-lg font-bold">{deal.title}</h3>{deal.status === 'paused' && <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[9px] font-bold uppercase tracking-[.12em] text-muted-foreground">Paused</span>}{['scheduled', 'sold-out', 'expired'].includes(getDealAvailability(deal)) && <span className="shrink-0 rounded-full bg-accent px-2 py-1 text-[9px] font-bold uppercase tracking-[.12em]">{availabilityLabel[getDealAvailability(deal)]}</span>}</div><div className="flex shrink-0 items-center gap-1"><button onClick={() => setEditingDeal(deal)} className="grid h-8 w-8 place-items-center rounded-full hover:bg-muted" aria-label={`Edit ${deal.title}`} data-testid={`button-edit-deal-${deal.id}`}><Pencil size={14} /></button><button onClick={() => changeDealStatus(deal.id, deal.status === 'active' ? 'paused' : 'active')} className="grid h-8 w-8 place-items-center rounded-full hover:bg-muted" aria-label={deal.status === 'active' ? `Pause ${deal.title}` : `Resume ${deal.title}`}>{deal.status === 'active' ? <Pause size={14} /> : <Play size={14} />}</button><button onClick={() => changeDealStatus(deal.id, 'archived')} className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label={`Archive ${deal.title}`} data-testid={`button-archive-deal-${deal.id}`}><Archive size={14} /></button></div></div><p className="mt-1 text-xs text-muted-foreground">{deal.purchasedCount} sold · {getDealAvailability(deal) === 'sold-out' ? 'Sold out' : `${deal.capacity - deal.purchasedCount} spots left`} · ends {dateLabel(deal.endsAt)} at 4:59 PM</p><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted"><div className={`h-full rounded-full ${deal.status === 'paused' ? 'bg-muted-foreground' : getDealAvailability(deal) === 'sold-out' ? 'bg-destructive' : 'bg-primary'}`} style={{ width: `${Math.min(100, Math.round(deal.purchasedCount / deal.capacity * 100))}%` }} /></div></div><div className="text-right"><p className="font-serif text-xl font-bold">{money(deal.dealPrice)}</p><p className="text-[10px] text-muted-foreground">per voucher</p></div></div>)}</div></div>
       <div className="rounded-2xl bg-foreground p-6 text-background"><p className="text-xs font-bold uppercase tracking-[.16em] text-accent">Fill the quiet hours</p><h2 className="mt-3 font-serif text-3xl font-bold leading-[.95]">Your next great regular is nearby.</h2><p className="mt-4 text-xs leading-relaxed text-background/65">Deals are a low-lift way to turn a quiet Tuesday into a first visit—and a first visit into a regular.</p><button className="mt-7 flex items-center gap-2 text-xs font-bold text-accent" data-testid="button-learn-deals">See how goodroom works <ArrowRight size={14} /></button></div></section>
     <section className="mt-10"><div className="mb-4 flex items-end justify-between"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-primary">Front desk</p><h2 className="mt-1 font-serif text-2xl font-bold">Redeem a voucher</h2></div></div><div className="grid gap-5 lg:grid-cols-[1fr_1fr]"><div className="rounded-2xl border border-border bg-card p-5"><p className="text-sm font-semibold">Enter the customer’s code</p><div className="mt-4 flex gap-2"><label className="flex h-11 flex-1 items-center gap-2 rounded-xl border border-border bg-background px-3 focus-within:border-primary"><Search size={16} className="text-muted-foreground" /><input value={lookup} onChange={(e) => setLookup(e.target.value.toUpperCase())} placeholder="SAF-7K2-91M" className="w-full bg-transparent font-mono text-sm uppercase outline-none placeholder:text-muted-foreground" data-testid="input-voucher-lookup" /></label><button onClick={() => setNotice(lookupResult ? 'Voucher found. Review details before redeeming.' : 'No voucher found. Check the code and try again.')} className="rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground" data-testid="button-lookup-voucher">Look up</button></div>{lookup && <div className={`mt-4 rounded-xl p-4 ${lookupResult ? 'bg-secondary' : 'bg-destructive/10'}`}>{lookupResult ? <><div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-[.14em]">Voucher found</p><p className="mt-1 font-semibold">{lookupResult.service}</p><p className="mt-1 text-xs text-muted-foreground">{lookupResult.customer} · {lookupResult.code}</p></div><BadgeCheck size={20} /></div><button onClick={() => redeem(lookupResult.code)} disabled={lookupResult.status === 'Redeemed'} className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-foreground py-2.5 text-xs font-bold text-background disabled:opacity-50" data-testid="button-mark-redeemed">{lookupResult.status === 'Redeemed' ? <><Check size={14} /> Already redeemed</> : 'Mark as redeemed'}</button></> : <p className="text-xs font-semibold text-destructive">No voucher matched that code.</p>}</div>} {notice && <p className="mt-3 text-xs font-semibold text-primary" data-testid="status-redemption-notice">{notice}</p>}</div><div className="rounded-2xl border border-border bg-card p-5"><div className="flex items-center justify-between"><p className="text-sm font-semibold">Recent redemptions</p><button className="grid h-8 w-8 place-items-center rounded-full hover:bg-muted" aria-label="More redemption options" data-testid="button-more-redemptions"><MoreHorizontal size={16} /></button></div><div className="mt-4 divide-y divide-border">{redemptions.map((item) => <div key={item.code} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"><div className="min-w-0"><p className="truncate text-xs font-semibold">{item.customer}</p><p className="mt-1 truncate text-[11px] text-muted-foreground">{item.service} · {item.time}</p></div><span className={`shrink-0 text-[10px] font-bold ${item.status === 'Redeemed' ? 'text-primary' : 'text-accent-foreground'}`}>{item.status}</span></div>)}</div></div></div></section>
    </main>{showCreate && <CreateDealModal onClose={() => setShowCreate(false)} onCreate={createDeal} />}{editingDeal && <CreateDealModal deal={editingDeal} onClose={() => setEditingDeal(null)} onCreate={updateDeal} />}<ModePill /></SalonShell>;
