@@ -37,10 +37,40 @@ export function SalonShell({ children, search, onSearch }: { children: ReactNode
         </div>}
       </header>
       {children}
-      <footer className="mx-auto mt-24 max-w-[1240px] border-t border-border px-5 py-10 lg:px-8">
-        <div className="flex flex-col justify-between gap-4 text-xs text-muted-foreground sm:flex-row">
-          <span className="font-serif text-lg font-normal tracking-[-.03em] text-[#2b2340]">Certxa.</span>
-          <span>Good finds. Clear value. Local beauty.</span>
+      <footer className="mt-24 border-t border-border bg-card" data-testid="site-footer">
+        <div className="mx-auto max-w-[1240px] px-5 py-12 lg:px-8 lg:py-14">
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+            <div className="max-w-xs">
+              <Link href="/" className="font-serif text-2xl font-normal tracking-[-.045em] text-[#2b2340]" data-testid="footer-brand">Certxa.</Link>
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">Good finds, clear value, and local beauty experiences worth making time for.</p>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[.16em] text-foreground">Discover</p>
+              <div className="mt-4 flex flex-col items-start gap-3 text-sm text-muted-foreground">
+                <Link href="/" className="transition-colors hover:text-foreground" data-testid="footer-link-deals">Browse deals</Link>
+                <Link href="/wallet" className="transition-colors hover:text-foreground" data-testid="footer-link-wallet">My vouchers</Link>
+                <Link href="/?category=Nails" className="transition-colors hover:text-foreground" data-testid="footer-link-nails">Nail services</Link>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[.16em] text-foreground">For salons</p>
+              <div className="mt-4 flex flex-col items-start gap-3 text-sm text-muted-foreground">
+                <Link href="/salon" className="transition-colors hover:text-foreground" data-testid="footer-link-salon">Salon console</Link>
+                <Link href="/salon/deals/new" className="transition-colors hover:text-foreground" data-testid="footer-link-create-deal">Create a deal</Link>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[.16em] text-foreground">Need help?</p>
+              <div className="mt-4 flex flex-col items-start gap-3 text-sm text-muted-foreground">
+                <a href="mailto:hello@certxa.example" className="transition-colors hover:text-foreground" data-testid="footer-link-contact">Contact us</a>
+                <span>Real offers from local salons</span>
+              </div>
+            </div>
+          </div>
+          <div className="mt-12 flex flex-col gap-3 border-t border-border pt-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+            <span>© 2026 Certxa. All rights reserved.</span>
+            <span>Made for better beauty days.</span>
+          </div>
         </div>
       </footer>
     </div>
