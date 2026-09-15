@@ -20,15 +20,15 @@ function DealCard({ deal, favorite, toggle }: { deal: Deal; favorite: boolean; t
       </div>
       <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-foreground/85 px-2.5 py-1 text-[10px] font-semibold text-background backdrop-blur-sm"><Clock3 size={12} /> Ends soon</div>
     </div>
-    <div className="p-4 sm:p-5">
+    <div className="p-4">
       <div className="mb-2 flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-[.12em] text-muted-foreground"><span>{deal.category}</span><span className="flex items-center gap-1 normal-case tracking-normal text-foreground"><span className="text-accent">★</span> {deal.rating} <span className="font-normal text-muted-foreground">({deal.reviewCount})</span></span></div>
-      <h3 className="line-clamp-2 font-serif text-[21px] font-bold leading-[1.1] tracking-[-.03em]">{deal.title}</h3>
+      <h3 className="line-clamp-2 font-serif text-[19px] font-bold leading-[1.1] tracking-[-.03em]">{deal.title}</h3>
       <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"><MapPin size={13} /> {deal.salonName} · {deal.city}</p>
-      <div className="mt-5 flex items-end justify-between gap-2">
-        <div><span className="font-serif text-2xl font-bold">{money(deal.dealPrice)}</span><span className="ml-2 text-xs text-muted-foreground line-through">{money(deal.originalPrice)}</span></div>
+      <div className="mt-4 flex items-end justify-between gap-2">
+        <div><span className="font-serif text-[22px] font-bold">{money(deal.dealPrice)}</span><span className="ml-2 text-xs text-muted-foreground line-through">{money(deal.originalPrice)}</span></div>
         <span className="text-xs font-bold text-primary">Save {money(deal.savings)}</span>
       </div>
-      <div className="mt-4 flex items-center gap-2"><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-secondary" style={{ width: `${soldPercent}%` }} /></div><span className="text-[10px] font-medium text-muted-foreground">{deal.capacity - deal.purchasedCount} left</span></div>
+      <div className="mt-3 flex items-center gap-2"><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-secondary" style={{ width: `${soldPercent}%` }} /></div><span className="text-[10px] font-medium text-muted-foreground">{deal.capacity - deal.purchasedCount} left</span></div>
     </div>
   </Link>;
 }
@@ -92,7 +92,7 @@ export function MarketplacePage() {
     </section>
     <section className="mx-auto max-w-[1240px] px-5 pb-6 pt-12 lg:px-8">
        <div className="mb-7 flex items-end justify-between"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-primary">{savedOnly ? 'Your shortlist' : 'Curated for you'}</p><h2 className="mt-2 font-serif text-3xl font-bold tracking-[-.04em]">{savedOnly ? 'Saved for later' : 'The good stuff, today'}</h2></div><span className="hidden text-xs text-muted-foreground sm:block">{filtered.length} finds in Brooklyn</span></div>
-      {loading ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"><DealSkeleton /><DealSkeleton /><DealSkeleton /></div> : filtered.length ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{filtered.map((deal, index) => <div key={deal.id} className={`rise-in delay-${Math.min(index + 1, 4)}`}><DealCard deal={deal} favorite={favorites.includes(deal.id)} toggle={() => toggle(deal.id)} /></div>)}</div> : <div className="rounded-2xl border border-dashed border-border bg-card px-5 py-16 text-center"><div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-muted"><Search size={20} /></div><h3 className="mt-4 font-serif text-2xl font-bold">No finds yet</h3><p className="mt-2 text-sm text-muted-foreground">Try another service, salon, or neighborhood.</p><button onClick={() => { setSearch(''); setCategory('All finds'); }} className="mt-5 text-sm font-bold text-primary underline underline-offset-4" data-testid="button-clear-filters">Clear filters</button></div>}
+      {loading ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"><DealSkeleton /><DealSkeleton /><DealSkeleton /></div> : filtered.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{filtered.map((deal, index) => <div key={deal.id} className={`rise-in delay-${Math.min(index + 1, 4)}`}><DealCard deal={deal} favorite={favorites.includes(deal.id)} toggle={() => toggle(deal.id)} /></div>)}</div> : <div className="rounded-2xl border border-dashed border-border bg-card px-5 py-16 text-center"><div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-muted"><Search size={20} /></div><h3 className="mt-4 font-serif text-2xl font-bold">No finds yet</h3><p className="mt-2 text-sm text-muted-foreground">Try another service, salon, or neighborhood.</p><button onClick={() => { setSearch(''); setCategory('All finds'); }} className="mt-5 text-sm font-bold text-primary underline underline-offset-4" data-testid="button-clear-filters">Clear filters</button></div>}
     </section>
     <section className="mx-auto max-w-[1240px] px-5 pt-12 lg:px-8">
       <div className="relative overflow-hidden rounded-[28px] bg-primary px-7 py-10 text-primary-foreground sm:px-12 lg:flex lg:items-center lg:justify-between">
