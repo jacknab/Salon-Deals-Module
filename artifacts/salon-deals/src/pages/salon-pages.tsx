@@ -17,7 +17,9 @@ const availabilityLabel: Record<ReturnType<typeof getDealAvailability>, string> 
   archived: 'Archived',
 };
 
-function Countdown({ endsAt, compact = false }: { endsAt: string; compact?: boolean }) {
+const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
+
+function Countdown({ endsAt }: { endsAt: string }) {
   const [remaining, setRemaining] = useState(() => Math.max(0, new Date(endsAt).getTime() - Date.now()));
   useEffect(() => {
     const update = () => setRemaining(Math.max(0, new Date(endsAt).getTime() - Date.now()));
@@ -25,40 +27,44 @@ function Countdown({ endsAt, compact = false }: { endsAt: string; compact?: bool
     const timer = window.setInterval(update, 1000);
     return () => window.clearInterval(timer);
   }, [endsAt]);
-  if (!remaining) return <span className={compact ? 'font-bold' : 'text-destructive'}>Ended</span>;
+  if (!remaining || remaining > THREE_DAYS) return null;
   const totalSeconds = Math.floor(remaining / 1000);
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
   const value = days > 0
-    ? `${days}d ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m`
+    ? `${days}d ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`
     : `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  return <span className={compact ? 'font-mono font-bold tabular-nums' : 'font-mono font-bold tabular-nums'}>{value}</span>;
+  return <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-destructive" data-testid="text-deal-countdown"><Clock3 size={13} /> <span>Ends in</span> <span className="font-mono tabular-nums">{value}</span></p>;
 }
 
 function DealCard({ deal, favorite, toggle }: { deal: Deal; favorite: boolean; toggle: () => void }) {
-  const soldPercent = Math.round((deal.purchasedCount / deal.capacity) * 100);
   const availability = getDealAvailability(deal);
   const soldOut = availability === 'sold-out';
   return <Link href={`/deal/${deal.id}`} className="deal-card group block overflow-hidden rounded-2xl border border-border bg-card" data-testid={`card-deal-${deal.id}`}>
-    <div className="relative aspect-[1.28] overflow-hidden bg-muted">
+    <div className="relative aspect-[1.85] overflow-hidden bg-muted">
       <img src={deal.image} alt="" className="deal-image h-full w-full object-cover" />
       <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3">
-        <span className="rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-[.12em] text-foreground">{deal.discountPercent}% off</span>
+        <span className="inline-flex items-center gap-1 rounded-sm bg-card px-2 py-1 text-[11px] font-bold text-card-foreground shadow-sm"><Gift size={12} className="text-primary" /> Popular Gift</span>
         <FavoriteButton id={deal.id} active={favorite} onClick={toggle} />
       </div>
-        <div className={`absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold backdrop-blur-sm ${soldOut ? 'bg-destructive text-destructive-foreground' : 'bg-foreground/85 text-background'}`}><Clock3 size={12} /> {soldOut ? 'Sold out' : availability === 'scheduled' ? `Starts ${dateLabel(deal.startsAt)}` : <><span>Ends in</span> <Countdown endsAt={deal.endsAt} compact /></>}</div>
     </div>
-    <div className="p-4">
-      <div className="mb-2 flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-[.12em] text-muted-foreground"><span>{deal.category}</span><span className="flex items-center gap-1 normal-case tracking-normal text-foreground"><span className="text-accent">★</span> {deal.rating} <span className="font-normal text-muted-foreground">({deal.reviewCount})</span></span></div>
-      <h3 className="line-clamp-2 font-serif text-[19px] font-bold leading-[1.1] tracking-[-.03em]">{deal.title}</h3>
-      <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"><MapPin size={13} /> {deal.salonName} · {deal.city}</p>
-      <div className="mt-4 flex items-end justify-between gap-2">
-        <div><span className="font-serif text-[22px] font-bold">{money(deal.dealPrice)}</span><span className="ml-2 text-xs text-muted-foreground line-through">{money(deal.originalPrice)}</span></div>
-        <span className="text-xs font-bold text-primary">Save {money(deal.savings)}</span>
+    <div className="p-3">
+      <p className="text-sm text-foreground">{deal.salonName}</p>
+      <h3 className="mt-1 line-clamp-2 font-sans text-[17px] font-bold leading-[1.15]">{deal.title}</h3>
+      <p className="mt-1.5 flex items-center gap-1 text-sm text-muted-foreground"><MapPin size={13} /> {deal.city}</p>
+      <div className="mt-2 flex items-center gap-1.5" aria-label={`${deal.rating} out of 5 stars from ${deal.reviewCount} reviews`}>
+        <span className="flex items-center gap-0.5" aria-hidden="true">{Array.from({ length: 5 }, (_, index) => <Star key={index} size={14} className={index < Math.round(deal.rating) ? 'fill-accent text-accent' : 'text-accent'} />)}</span>
+        <span className="text-sm font-semibold">{deal.rating}</span>
+        <span className="text-sm text-muted-foreground">({deal.reviewCount})</span>
       </div>
-       <div className="mt-3 flex items-center gap-2"><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"><div className={`h-full rounded-full ${soldOut ? 'bg-destructive' : 'bg-secondary'}`} style={{ width: `${Math.min(100, soldPercent)}%` }} /></div><span className={`text-[10px] font-medium ${soldOut ? 'text-destructive' : 'text-muted-foreground'}`}>{soldOut ? 'Sold out' : `${deal.capacity - deal.purchasedCount} left`}</span></div>
+      <div className="mt-2 flex items-center gap-2">
+        <span className="text-sm text-muted-foreground line-through">{money(deal.originalPrice)}</span>
+        <span className="text-lg font-bold text-primary">{money(deal.dealPrice)}</span>
+        <span className="rounded-sm bg-secondary/55 px-1.5 py-0.5 text-xs font-bold text-primary">-{deal.discountPercent}%</span>
+      </div>
+      {availability === 'active' && <Countdown endsAt={deal.endsAt} />}
     </div>
   </Link>;
 }
