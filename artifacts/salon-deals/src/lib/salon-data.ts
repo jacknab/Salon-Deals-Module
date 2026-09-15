@@ -8,7 +8,7 @@ export type Deal = {
   dealPrice: number; discountPercent: number; savings: number; purchasedCount: number;
   capacity: number; startsAt: string; endsAt: string; description: string; highlights: string[];
   finePrint: string; status: DealStatus; offerType?: OfferType;
-  serviceName?: string; giftCardValue?: number;
+  serviceName?: string; giftCardValue?: number; firstTimeCustomerOnly?: boolean;
 };
 
 export type DealAvailability = 'scheduled' | 'active' | 'sold-out' | 'expired' | 'paused' | 'archived';
