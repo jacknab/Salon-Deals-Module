@@ -24,9 +24,13 @@ import type {
   Deal,
   DealInput,
   DealUpdate,
+  FavoriteIds,
   HealthStatus,
   NotFoundResponse,
-  UnauthorizedResponse
+  PurchaseInput,
+  PurchaseResponse,
+  UnauthorizedResponse,
+  Voucher
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -210,6 +214,548 @@ export function useListPublicDeals<TData = Awaited<ReturnType<typeof listPublicD
 
 
 
+
+export const getPurchaseDealUrl = (id: string,) => {
+
+
+
+
+  return `/api/deals/${id}/purchase`
+}
+
+/**
+ * @summary Purchase one or more vouchers for a deal
+ */
+export const purchaseDeal = async (id: string,
+    purchaseInput: PurchaseInput, options?: Parameters<typeof customFetch>[1]): Promise<PurchaseResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PurchaseResponse>(getPurchaseDealUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(purchaseInput)
+  }
+);}
+
+
+
+
+
+export const getPurchaseDealMutationKey = () => ['purchaseDeal'] as const;
+
+export const getPurchaseDealMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseDeal>>, TError,PurchaseDealMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof purchaseDeal>>, TError,PurchaseDealMutationVariables, TContext> => {
+
+const mutationKey = getPurchaseDealMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof purchaseDeal>>, PurchaseDealMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  purchaseDeal(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PurchaseDealMutationResult = NonNullable<Awaited<ReturnType<typeof purchaseDeal>>>
+    export type PurchaseDealMutationBody = BodyType<PurchaseInput>
+    export type PurchaseDealMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>
+    export type PurchaseDealMutationVariables = {id: string;data: BodyType<PurchaseInput>}
+
+    /**
+ * @summary Purchase one or more vouchers for a deal
+ */
+export const usePurchaseDeal = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseDeal>>, TError,PurchaseDealMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof purchaseDeal>>,
+        TError,
+        PurchaseDealMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPurchaseDealMutationOptions(options));
+    }
+
+export const getListFavoriteIdsUrl = () => {
+
+
+
+
+  return `/api/me/favorites`
+}
+
+/**
+ * @summary List the signed-in customer's favorite deals
+ */
+export const listFavoriteIds = async ( options?: Parameters<typeof customFetch>[1]): Promise<FavoriteIds> => {
+
+  return customFetch<FavoriteIds>(getListFavoriteIdsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFavoriteIdsQueryKey = () => {
+    return [
+    `/api/me/favorites`
+    ] as const;
+    }
+
+
+export const getListFavoriteIdsQueryOptions = <TData = Awaited<ReturnType<typeof listFavoriteIds>>, TError = ErrorType<UnauthorizedResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFavoriteIds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFavoriteIdsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFavoriteIds>>> = ({ signal }) => listFavoriteIds({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFavoriteIds>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListFavoriteIdsQueryResult = NonNullable<Awaited<ReturnType<typeof listFavoriteIds>>>
+export type ListFavoriteIdsQueryError = ErrorType<UnauthorizedResponse>
+
+
+/**
+ * @summary List the signed-in customer's favorite deals
+ */
+
+export function useListFavoriteIds<TData = Awaited<ReturnType<typeof listFavoriteIds>>, TError = ErrorType<UnauthorizedResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFavoriteIds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListFavoriteIdsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAddFavoriteUrl = (id: string,) => {
+
+
+
+
+  return `/api/me/favorites/${id}`
+}
+
+/**
+ * @summary Save a deal to the signed-in customer's favorites
+ */
+export const addFavorite = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<FavoriteIds> => {
+
+  return customFetch<FavoriteIds>(getAddFavoriteUrl(id),
+  {
+    ...options,
+    method: 'PUT'
+
+
+  }
+);}
+
+
+
+
+
+export const getAddFavoriteMutationKey = () => ['addFavorite'] as const;
+
+export const getAddFavoriteMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addFavorite>>, TError,AddFavoriteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addFavorite>>, TError,AddFavoriteMutationVariables, TContext> => {
+
+const mutationKey = getAddFavoriteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addFavorite>>, AddFavoriteMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  addFavorite(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddFavoriteMutationResult = NonNullable<Awaited<ReturnType<typeof addFavorite>>>
+
+    export type AddFavoriteMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+    export type AddFavoriteMutationVariables = {id: string}
+
+    /**
+ * @summary Save a deal to the signed-in customer's favorites
+ */
+export const useAddFavorite = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addFavorite>>, TError,AddFavoriteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addFavorite>>,
+        TError,
+        AddFavoriteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddFavoriteMutationOptions(options));
+    }
+
+export const getRemoveFavoriteUrl = (id: string,) => {
+
+
+
+
+  return `/api/me/favorites/${id}`
+}
+
+/**
+ * @summary Remove a deal from the signed-in customer's favorites
+ */
+export const removeFavorite = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<FavoriteIds> => {
+
+  return customFetch<FavoriteIds>(getRemoveFavoriteUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveFavoriteMutationKey = () => ['removeFavorite'] as const;
+
+export const getRemoveFavoriteMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFavorite>>, TError,RemoveFavoriteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeFavorite>>, TError,RemoveFavoriteMutationVariables, TContext> => {
+
+const mutationKey = getRemoveFavoriteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeFavorite>>, RemoveFavoriteMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  removeFavorite(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveFavoriteMutationResult = NonNullable<Awaited<ReturnType<typeof removeFavorite>>>
+
+    export type RemoveFavoriteMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+    export type RemoveFavoriteMutationVariables = {id: string}
+
+    /**
+ * @summary Remove a deal from the signed-in customer's favorites
+ */
+export const useRemoveFavorite = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFavorite>>, TError,RemoveFavoriteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeFavorite>>,
+        TError,
+        RemoveFavoriteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveFavoriteMutationOptions(options));
+    }
+
+export const getListMyVouchersUrl = () => {
+
+
+
+
+  return `/api/me/vouchers`
+}
+
+/**
+ * @summary List the signed-in customer's vouchers
+ */
+export const listMyVouchers = async ( options?: Parameters<typeof customFetch>[1]): Promise<Voucher[]> => {
+
+  return customFetch<Voucher[]>(getListMyVouchersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyVouchersQueryKey = () => {
+    return [
+    `/api/me/vouchers`
+    ] as const;
+    }
+
+
+export const getListMyVouchersQueryOptions = <TData = Awaited<ReturnType<typeof listMyVouchers>>, TError = ErrorType<UnauthorizedResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyVouchers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyVouchersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyVouchers>>> = ({ signal }) => listMyVouchers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyVouchers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyVouchersQueryResult = NonNullable<Awaited<ReturnType<typeof listMyVouchers>>>
+export type ListMyVouchersQueryError = ErrorType<UnauthorizedResponse>
+
+
+/**
+ * @summary List the signed-in customer's vouchers
+ */
+
+export function useListMyVouchers<TData = Awaited<ReturnType<typeof listMyVouchers>>, TError = ErrorType<UnauthorizedResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyVouchers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyVouchersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListSalonVouchersUrl = () => {
+
+
+
+
+  return `/api/salon/vouchers`
+}
+
+/**
+ * @summary List vouchers for the signed-in salon
+ */
+export const listSalonVouchers = async ( options?: Parameters<typeof customFetch>[1]): Promise<Voucher[]> => {
+
+  return customFetch<Voucher[]>(getListSalonVouchersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSalonVouchersQueryKey = () => {
+    return [
+    `/api/salon/vouchers`
+    ] as const;
+    }
+
+
+export const getListSalonVouchersQueryOptions = <TData = Awaited<ReturnType<typeof listSalonVouchers>>, TError = ErrorType<UnauthorizedResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSalonVouchers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSalonVouchersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSalonVouchers>>> = ({ signal }) => listSalonVouchers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSalonVouchers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSalonVouchersQueryResult = NonNullable<Awaited<ReturnType<typeof listSalonVouchers>>>
+export type ListSalonVouchersQueryError = ErrorType<UnauthorizedResponse>
+
+
+/**
+ * @summary List vouchers for the signed-in salon
+ */
+
+export function useListSalonVouchers<TData = Awaited<ReturnType<typeof listSalonVouchers>>, TError = ErrorType<UnauthorizedResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSalonVouchers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSalonVouchersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRedeemSalonVoucherUrl = (code: string,) => {
+
+
+
+
+  return `/api/salon/vouchers/${code}/redeem`
+}
+
+/**
+ * @summary Redeem a voucher owned by the signed-in salon
+ */
+export const redeemSalonVoucher = async (code: string, options?: Parameters<typeof customFetch>[1]): Promise<Voucher> => {
+
+  return customFetch<Voucher>(getRedeemSalonVoucherUrl(code),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRedeemSalonVoucherMutationKey = () => ['redeemSalonVoucher'] as const;
+
+export const getRedeemSalonVoucherMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof redeemSalonVoucher>>, TError,RedeemSalonVoucherMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof redeemSalonVoucher>>, TError,RedeemSalonVoucherMutationVariables, TContext> => {
+
+const mutationKey = getRedeemSalonVoucherMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof redeemSalonVoucher>>, RedeemSalonVoucherMutationVariables> = (props) => {
+          const {code} = props ?? {};
+
+          return  redeemSalonVoucher(code,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RedeemSalonVoucherMutationResult = NonNullable<Awaited<ReturnType<typeof redeemSalonVoucher>>>
+
+    export type RedeemSalonVoucherMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+    export type RedeemSalonVoucherMutationVariables = {code: string}
+
+    /**
+ * @summary Redeem a voucher owned by the signed-in salon
+ */
+export const useRedeemSalonVoucher = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof redeemSalonVoucher>>, TError,RedeemSalonVoucherMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof redeemSalonVoucher>>,
+        TError,
+        RedeemSalonVoucherMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRedeemSalonVoucherMutationOptions(options));
+    }
 
 export const getListSalonDealsUrl = () => {
 

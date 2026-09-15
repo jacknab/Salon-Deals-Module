@@ -49,6 +49,13 @@ export interface Deal {
      */
   giftCardValue?: number | null;
   image: string;
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  rating: number;
+  /** @minimum 0 */
+  reviewCount: number;
   /** @minimum 0 */
   originalPrice: number;
   /** @minimum 0 */
@@ -101,6 +108,13 @@ export interface DealInput {
      */
   giftCardValue?: number | null;
   image?: string;
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  rating?: number;
+  /** @minimum 0 */
+  reviewCount?: number;
   /** @minimum 0 */
   originalPrice: number;
   /** @minimum 0 */
@@ -152,6 +166,13 @@ export interface DealUpdate {
      */
   giftCardValue?: number | null;
   image?: string;
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  rating?: number;
+  /** @minimum 0 */
+  reviewCount?: number;
   /** @minimum 0 */
   originalPrice?: number;
   /** @minimum 0 */
@@ -163,6 +184,46 @@ export interface DealUpdate {
   highlights?: string[];
   finePrint?: string;
   status?: DealUpdateStatus;
+}
+
+export interface FavoriteIds {
+  favoriteDealIds: string[];
+}
+
+export interface PurchaseInput {
+  /**
+     * @minimum 1
+     * @maximum 4
+     */
+  quantity: number;
+}
+
+export type VoucherStatus = typeof VoucherStatus[keyof typeof VoucherStatus];
+
+
+export const VoucherStatus = {
+  active: 'active',
+  used: 'used',
+  expired: 'expired',
+} as const;
+
+export interface Voucher {
+  id: string;
+  dealId: string;
+  dealTitle: string;
+  salonName: string;
+  customerName: string;
+  purchaseDate: string;
+  expiresAt: string;
+  code: string;
+  status: VoucherStatus;
+  qrSeed: string;
+  /** @nullable */
+  redeemedAt?: string | null;
+}
+
+export interface PurchaseResponse {
+  vouchers: Voucher[];
 }
 
 /**

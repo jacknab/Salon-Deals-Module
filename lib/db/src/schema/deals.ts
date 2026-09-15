@@ -1,5 +1,5 @@
 import { createInsertSchema } from "drizzle-zod";
-import { date, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { date, integer, pgTable, real, text, timestamp } from "drizzle-orm/pg-core";
 import { z } from "zod/v4";
 
 export const salonDealsTable = pgTable("salon_deals", {
@@ -13,6 +13,8 @@ export const salonDealsTable = pgTable("salon_deals", {
   serviceName: text("service_name"),
   giftCardValue: integer("gift_card_value"),
   image: text("image").notNull(),
+  rating: real("rating").notNull().default(5),
+  reviewCount: integer("review_count").notNull().default(0),
   originalPrice: integer("original_price").notNull(),
   dealPrice: integer("deal_price").notNull(),
   discountPercent: integer("discount_percent").notNull().default(0),

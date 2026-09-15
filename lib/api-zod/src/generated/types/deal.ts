@@ -23,6 +23,13 @@ export interface Deal {
      */
   giftCardValue?: number | null;
   image: string;
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  rating: number;
+  /** @minimum 0 */
+  reviewCount: number;
   /** @minimum 0 */
   originalPrice: number;
   /** @minimum 0 */

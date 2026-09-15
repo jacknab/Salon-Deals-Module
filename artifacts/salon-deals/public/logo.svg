@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 48" role="img" aria-labelledby="title">
+  <title>Certxa</title>
+  <rect width="48" height="48" rx="14" fill="#6b4e9b"/>
+  <path d="M15 17.5h18M15 24h13M15 30.5h18" fill="none" stroke="#fffdf8" stroke-width="3" stroke-linecap="round"/>
+  <text x="59" y="32" fill="#2b2340" font-family="Georgia, serif" font-size="25">Certxa.</text>
+</svg>

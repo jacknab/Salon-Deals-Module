@@ -40,6 +40,136 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Deal"
+  /deals/{id}/purchase:
+    post:
+      operationId: purchaseDeal
+      tags: [deals]
+      summary: Purchase one or more vouchers for a deal
+      parameters:
+        - $ref: "#/components/parameters/DealId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseInput"
+      responses:
+        "201":
+          description: Purchased vouchers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/favorites:
+    get:
+      operationId: listFavoriteIds
+      tags: [favorites]
+      summary: List the signed-in customer's favorite deals
+      responses:
+        "200":
+          description: Favorite deal IDs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FavoriteIds"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /me/favorites/{id}:
+    put:
+      operationId: addFavorite
+      tags: [favorites]
+      summary: Save a deal to the signed-in customer's favorites
+      parameters:
+        - $ref: "#/components/parameters/DealId"
+      responses:
+        "200":
+          description: Updated favorite deal IDs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FavoriteIds"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: removeFavorite
+      tags: [favorites]
+      summary: Remove a deal from the signed-in customer's favorites
+      parameters:
+        - $ref: "#/components/parameters/DealId"
+      responses:
+        "200":
+          description: Updated favorite deal IDs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FavoriteIds"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/vouchers:
+    get:
+      operationId: listMyVouchers
+      tags: [vouchers]
+      summary: List the signed-in customer's vouchers
+      responses:
+        "200":
+          description: Customer vouchers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Voucher"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /salon/vouchers:
+    get:
+      operationId: listSalonVouchers
+      tags: [vouchers]
+      summary: List vouchers for the signed-in salon
+      responses:
+        "200":
+          description: Salon vouchers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Voucher"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /salon/vouchers/{code}/redeem:
+    post:
+      operationId: redeemSalonVoucher
+      tags: [vouchers]
+      summary: Redeem a voucher owned by the signed-in salon
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Redeemed voucher
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Voucher"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /salon/deals:
     get:
       operationId: listSalonDeals
@@ -155,6 +285,8 @@ components:
         - title
         - offerType
         - image
+        - rating
+        - reviewCount
         - originalPrice
         - dealPrice
         - discountPercent
@@ -180,6 +312,8 @@ components:
         serviceName: { type: ["string", "null"] }
         giftCardValue: { type: ["integer", "null"], minimum: 0 }
         image: { type: string }
+        rating: { type: number, minimum: 0, maximum: 5 }
+        reviewCount: { type: integer, minimum: 0 }
         originalPrice: { type: integer, minimum: 0 }
         dealPrice: { type: integer, minimum: 0 }
         discountPercent: { type: integer, minimum: 0, maximum: 100 }
@@ -223,6 +357,8 @@ components:
         serviceName: { type: ["string", "null"] }
         giftCardValue: { type: ["integer", "null"], minimum: 0 }
         image: { type: string }
+        rating: { type: number, minimum: 0, maximum: 5 }
+        reviewCount: { type: integer, minimum: 0 }
         originalPrice: { type: integer, minimum: 0 }
         dealPrice: { type: integer, minimum: 0 }
         capacity: { type: integer, minimum: 1 }
@@ -245,6 +381,8 @@ components:
         serviceName: { type: ["string", "null"] }
         giftCardValue: { type: ["integer", "null"], minimum: 0 }
         image: { type: string }
+        rating: { type: number, minimum: 0, maximum: 5 }
+        reviewCount: { type: integer, minimum: 0 }
         originalPrice: { type: integer, minimum: 0 }
         dealPrice: { type: integer, minimum: 0 }
         capacity: { type: integer, minimum: 1 }
@@ -257,4 +395,51 @@ components:
         status:
           type: string
           enum: [active, paused, archived, sold-out, expired]
+    FavoriteIds:
+      type: object
+      required: [favoriteDealIds]
+      properties:
+        favoriteDealIds:
+          type: array
+          items: { type: string }
+    PurchaseInput:
+      type: object
+      required: [quantity]
+      properties:
+        quantity: { type: integer, minimum: 1, maximum: 4 }
+    PurchaseResponse:
+      type: object
+      required: [vouchers]
+      properties:
+        vouchers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Voucher"
+    Voucher:
+      type: object
+      required:
+        - id
+        - dealId
+        - dealTitle
+        - salonName
+        - customerName
+        - purchaseDate
+        - expiresAt
+        - code
+        - status
+        - qrSeed
+      properties:
+        id: { type: string }
+        dealId: { type: string }
+        dealTitle: { type: string }
+        salonName: { type: string }
+        customerName: { type: string }
+        purchaseDate: { type: string, format: date }
+        expiresAt: { type: string, format: date }
+        code: { type: string }
+        status:
+          type: string
+          enum: [active, used, expired]
+        qrSeed: { type: string }
+        redeemedAt: { type: ["string", "null"], format: date-time }
 

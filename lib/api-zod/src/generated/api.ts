@@ -22,6 +22,11 @@ export const HealthCheckResponse = zod.object({
  */
 export const listPublicDealsResponseGiftCardValueMin = 0;
 
+export const listPublicDealsResponseRatingMin = 0;
+export const listPublicDealsResponseRatingMax = 5;
+
+export const listPublicDealsResponseReviewCountMin = 0;
+
 export const listPublicDealsResponseOriginalPriceMin = 0;
 
 export const listPublicDealsResponseDealPriceMin = 0;
@@ -46,6 +51,8 @@ export const ListPublicDealsResponseItem = zod.object({
   "serviceName": zod.string().nullish(),
   "giftCardValue": zod.number().int().min(listPublicDealsResponseGiftCardValueMin).nullish(),
   "image": zod.string(),
+  "rating": zod.number().min(listPublicDealsResponseRatingMin).max(listPublicDealsResponseRatingMax),
+  "reviewCount": zod.number().int().min(listPublicDealsResponseReviewCountMin),
   "originalPrice": zod.number().int().min(listPublicDealsResponseOriginalPriceMin),
   "dealPrice": zod.number().int().min(listPublicDealsResponseDealPriceMin),
   "discountPercent": zod.number().int().min(listPublicDealsResponseDiscountPercentMin).max(listPublicDealsResponseDiscountPercentMax),
@@ -64,9 +71,150 @@ export const ListPublicDealsResponse = zod.array(ListPublicDealsResponseItem)
 
 
 /**
+ * @summary Purchase one or more vouchers for a deal
+ */
+
+
+
+export const PurchaseDealParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const purchaseDealBodyQuantityMax = 4;
+
+
+
+export const PurchaseDealBody = zod.object({
+  "quantity": zod.number().int().min(1).max(purchaseDealBodyQuantityMax)
+})
+
+export const PurchaseDealResponse = zod.object({
+  "vouchers": zod.array(zod.object({
+  "id": zod.string(),
+  "dealId": zod.string(),
+  "dealTitle": zod.string(),
+  "salonName": zod.string(),
+  "customerName": zod.string(),
+  "purchaseDate": zod.coerce.date(),
+  "expiresAt": zod.coerce.date(),
+  "code": zod.string(),
+  "status": zod.enum(['active', 'used', 'expired']),
+  "qrSeed": zod.string(),
+  "redeemedAt": zod.coerce.date().nullish()
+}))
+})
+
+
+/**
+ * @summary List the signed-in customer's favorite deals
+ */
+export const ListFavoriteIdsResponse = zod.object({
+  "favoriteDealIds": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Save a deal to the signed-in customer's favorites
+ */
+
+
+
+export const AddFavoriteParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const AddFavoriteResponse = zod.object({
+  "favoriteDealIds": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Remove a deal from the signed-in customer's favorites
+ */
+
+
+
+export const RemoveFavoriteParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const RemoveFavoriteResponse = zod.object({
+  "favoriteDealIds": zod.array(zod.string())
+})
+
+
+/**
+ * @summary List the signed-in customer's vouchers
+ */
+export const ListMyVouchersResponseItem = zod.object({
+  "id": zod.string(),
+  "dealId": zod.string(),
+  "dealTitle": zod.string(),
+  "salonName": zod.string(),
+  "customerName": zod.string(),
+  "purchaseDate": zod.coerce.date(),
+  "expiresAt": zod.coerce.date(),
+  "code": zod.string(),
+  "status": zod.enum(['active', 'used', 'expired']),
+  "qrSeed": zod.string(),
+  "redeemedAt": zod.coerce.date().nullish()
+})
+export const ListMyVouchersResponse = zod.array(ListMyVouchersResponseItem)
+
+
+/**
+ * @summary List vouchers for the signed-in salon
+ */
+export const ListSalonVouchersResponseItem = zod.object({
+  "id": zod.string(),
+  "dealId": zod.string(),
+  "dealTitle": zod.string(),
+  "salonName": zod.string(),
+  "customerName": zod.string(),
+  "purchaseDate": zod.coerce.date(),
+  "expiresAt": zod.coerce.date(),
+  "code": zod.string(),
+  "status": zod.enum(['active', 'used', 'expired']),
+  "qrSeed": zod.string(),
+  "redeemedAt": zod.coerce.date().nullish()
+})
+export const ListSalonVouchersResponse = zod.array(ListSalonVouchersResponseItem)
+
+
+/**
+ * @summary Redeem a voucher owned by the signed-in salon
+ */
+
+
+
+export const RedeemSalonVoucherParams = zod.object({
+  "code": zod.coerce.string().min(1)
+})
+
+export const RedeemSalonVoucherResponse = zod.object({
+  "id": zod.string(),
+  "dealId": zod.string(),
+  "dealTitle": zod.string(),
+  "salonName": zod.string(),
+  "customerName": zod.string(),
+  "purchaseDate": zod.coerce.date(),
+  "expiresAt": zod.coerce.date(),
+  "code": zod.string(),
+  "status": zod.enum(['active', 'used', 'expired']),
+  "qrSeed": zod.string(),
+  "redeemedAt": zod.coerce.date().nullish()
+})
+
+
+/**
  * @summary List deals owned by the signed-in salon
  */
 export const listSalonDealsResponseGiftCardValueMin = 0;
+
+export const listSalonDealsResponseRatingMin = 0;
+export const listSalonDealsResponseRatingMax = 5;
+
+export const listSalonDealsResponseReviewCountMin = 0;
 
 export const listSalonDealsResponseOriginalPriceMin = 0;
 
@@ -92,6 +240,8 @@ export const ListSalonDealsResponseItem = zod.object({
   "serviceName": zod.string().nullish(),
   "giftCardValue": zod.number().int().min(listSalonDealsResponseGiftCardValueMin).nullish(),
   "image": zod.string(),
+  "rating": zod.number().min(listSalonDealsResponseRatingMin).max(listSalonDealsResponseRatingMax),
+  "reviewCount": zod.number().int().min(listSalonDealsResponseReviewCountMin),
   "originalPrice": zod.number().int().min(listSalonDealsResponseOriginalPriceMin),
   "dealPrice": zod.number().int().min(listSalonDealsResponseDealPriceMin),
   "discountPercent": zod.number().int().min(listSalonDealsResponseDiscountPercentMin).max(listSalonDealsResponseDiscountPercentMax),
@@ -118,6 +268,11 @@ export const ListSalonDealsResponse = zod.array(ListSalonDealsResponseItem)
 
 export const createSalonDealBodyGiftCardValueMin = 0;
 
+export const createSalonDealBodyRatingMin = 0;
+export const createSalonDealBodyRatingMax = 5;
+
+export const createSalonDealBodyReviewCountMin = 0;
+
 export const createSalonDealBodyOriginalPriceMin = 0;
 
 export const createSalonDealBodyDealPriceMin = 0;
@@ -134,6 +289,8 @@ export const CreateSalonDealBody = zod.object({
   "serviceName": zod.string().nullish(),
   "giftCardValue": zod.number().int().min(createSalonDealBodyGiftCardValueMin).nullish(),
   "image": zod.string().optional(),
+  "rating": zod.number().min(createSalonDealBodyRatingMin).max(createSalonDealBodyRatingMax).optional(),
+  "reviewCount": zod.number().int().min(createSalonDealBodyReviewCountMin).optional(),
   "originalPrice": zod.number().int().min(createSalonDealBodyOriginalPriceMin),
   "dealPrice": zod.number().int().min(createSalonDealBodyDealPriceMin),
   "capacity": zod.number().int().min(1),
@@ -144,6 +301,11 @@ export const CreateSalonDealBody = zod.object({
 })
 
 export const createSalonDealResponseGiftCardValueMin = 0;
+
+export const createSalonDealResponseRatingMin = 0;
+export const createSalonDealResponseRatingMax = 5;
+
+export const createSalonDealResponseReviewCountMin = 0;
 
 export const createSalonDealResponseOriginalPriceMin = 0;
 
@@ -169,6 +331,8 @@ export const CreateSalonDealResponse = zod.object({
   "serviceName": zod.string().nullish(),
   "giftCardValue": zod.number().int().min(createSalonDealResponseGiftCardValueMin).nullish(),
   "image": zod.string(),
+  "rating": zod.number().min(createSalonDealResponseRatingMin).max(createSalonDealResponseRatingMax),
+  "reviewCount": zod.number().int().min(createSalonDealResponseReviewCountMin),
   "originalPrice": zod.number().int().min(createSalonDealResponseOriginalPriceMin),
   "dealPrice": zod.number().int().min(createSalonDealResponseDealPriceMin),
   "discountPercent": zod.number().int().min(createSalonDealResponseDiscountPercentMin).max(createSalonDealResponseDiscountPercentMax),
@@ -201,6 +365,11 @@ export const UpdateSalonDealParams = zod.object({
 
 export const updateSalonDealBodyGiftCardValueMin = 0;
 
+export const updateSalonDealBodyRatingMin = 0;
+export const updateSalonDealBodyRatingMax = 5;
+
+export const updateSalonDealBodyReviewCountMin = 0;
+
 export const updateSalonDealBodyOriginalPriceMin = 0;
 
 export const updateSalonDealBodyDealPriceMin = 0;
@@ -217,6 +386,8 @@ export const UpdateSalonDealBody = zod.object({
   "serviceName": zod.string().nullish(),
   "giftCardValue": zod.number().int().min(updateSalonDealBodyGiftCardValueMin).nullish(),
   "image": zod.string().optional(),
+  "rating": zod.number().min(updateSalonDealBodyRatingMin).max(updateSalonDealBodyRatingMax).optional(),
+  "reviewCount": zod.number().int().min(updateSalonDealBodyReviewCountMin).optional(),
   "originalPrice": zod.number().int().min(updateSalonDealBodyOriginalPriceMin).optional(),
   "dealPrice": zod.number().int().min(updateSalonDealBodyDealPriceMin).optional(),
   "capacity": zod.number().int().min(1).optional(),
@@ -228,6 +399,11 @@ export const UpdateSalonDealBody = zod.object({
 })
 
 export const updateSalonDealResponseGiftCardValueMin = 0;
+
+export const updateSalonDealResponseRatingMin = 0;
+export const updateSalonDealResponseRatingMax = 5;
+
+export const updateSalonDealResponseReviewCountMin = 0;
 
 export const updateSalonDealResponseOriginalPriceMin = 0;
 
@@ -253,6 +429,8 @@ export const UpdateSalonDealResponse = zod.object({
   "serviceName": zod.string().nullish(),
   "giftCardValue": zod.number().int().min(updateSalonDealResponseGiftCardValueMin).nullish(),
   "image": zod.string(),
+  "rating": zod.number().min(updateSalonDealResponseRatingMin).max(updateSalonDealResponseRatingMax),
+  "reviewCount": zod.number().int().min(updateSalonDealResponseReviewCountMin),
   "originalPrice": zod.number().int().min(updateSalonDealResponseOriginalPriceMin),
   "dealPrice": zod.number().int().min(updateSalonDealResponseDealPriceMin),
   "discountPercent": zod.number().int().min(updateSalonDealResponseDiscountPercentMin).max(updateSalonDealResponseDiscountPercentMax),
