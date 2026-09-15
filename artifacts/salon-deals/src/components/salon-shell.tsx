@@ -46,9 +46,9 @@ export function SalonShell({ children }: { children: ReactNode }) {
 }
 
 export function SearchBox({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  return <label className="flex h-12 flex-1 items-center gap-3 rounded-xl border border-border bg-card px-4 shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10">
-    <Search size={18} className="text-muted-foreground" />
-    <input value={value} onChange={(e) => onChange(e.target.value)} placeholder="Try “balayage”, “facial”..." className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground" data-testid="input-search-deals" />
+  return <label className="flex min-h-14 flex-1 items-center gap-3 rounded-2xl border border-border bg-card px-5 shadow-sm transition-shadow focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 focus-within:shadow-[var(--shadow-card)]">
+    <Search size={21} className="shrink-0 text-muted-foreground" />
+    <input value={value} onChange={(e) => onChange(e.target.value)} placeholder="Search services, salons, or neighborhoods" className="w-full bg-transparent text-base outline-none placeholder:text-muted-foreground" data-testid="input-search-deals" />
   </label>;
 }
 

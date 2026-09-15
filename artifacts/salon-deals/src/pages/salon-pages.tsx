@@ -87,21 +87,8 @@ export function MarketplacePage() {
   const toggle = (id: string) => { const next = favorites.includes(id) ? favorites.filter((x) => x !== id) : [...favorites, id]; setFavorites(next); saveLocal('certxa-favorites', next); };
   const chooseCategory = (next: string) => { setLoading(true); setCategory(next); window.setTimeout(() => setLoading(false), 240); };
   return <SalonShell><main>
-    <section className="mx-auto max-w-[1240px] px-5 pb-10 pt-12 lg:px-8 lg:pt-20">
-      <div className="grid gap-10 lg:grid-cols-[1fr_410px] lg:items-end">
-        <div className="rise-in">
-          <p className="mb-5 flex items-center gap-2 text-xs font-bold uppercase tracking-[.18em] text-primary"><Sparkles size={14} /> Beauty finds, close to home</p>
-          <h1 className="max-w-[720px] font-serif text-[clamp(3.4rem,8vw,6.7rem)] font-bold leading-[.88] tracking-[-.07em]">Good hair days<br /><em className="font-normal text-primary">start here.</em></h1>
-          <p className="mt-7 max-w-[500px] text-base leading-relaxed text-muted-foreground">Exceptional salon services, clear prices, and a little nudge to try somewhere new. These neighborhood offers have a shelf life.</p>
-        </div>
-        <div className="relative hidden min-h-[210px] overflow-hidden rounded-[28px] bg-secondary p-7 lg:block rise-in delay-2">
-          <div className="absolute -right-10 -top-14 h-56 w-56 rounded-full border-[26px] border-background/20" /><div className="absolute bottom-[-52px] right-12 h-44 w-44 rounded-full bg-accent/80" />
-          <div className="relative z-10 flex h-full flex-col justify-between"><span className="font-mono text-[10px] uppercase tracking-[.2em]">The neighborhood edit / 04</span><p className="max-w-[220px] font-serif text-[30px] font-bold leading-none">Worth leaving the house for.</p><span className="text-xs font-semibold">Fresh offers, updated weekly →</span></div>
-        </div>
-      </div>
-    </section>
     <section className="border-y border-border bg-card/55">
-      <div className="mx-auto flex max-w-[1240px] flex-col gap-3 px-5 py-4 lg:flex-row lg:items-center lg:px-8">
+      <div className="mx-auto flex max-w-[1240px] flex-col gap-4 px-5 py-5 lg:flex-row lg:items-center lg:px-8">
         <SearchBox value={search} onChange={setSearch} />
         <div className="flex gap-2 overflow-x-auto pb-1 lg:ml-2 lg:pb-0">{categories.map((item) => <button key={item} onClick={() => chooseCategory(item)} className={`whitespace-nowrap rounded-full border px-4 py-2.5 text-xs font-bold transition-all ${category === item ? 'border-foreground bg-foreground text-background' : 'border-border bg-background hover:border-foreground'}`} data-testid={`button-category-${item.toLowerCase().replace(' ', '-')}`}>{item}</button>)}<button onClick={() => setSavedOnly((visible) => !visible)} className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-2.5 text-xs font-bold transition-all ${savedOnly ? 'border-secondary bg-secondary' : 'border-border bg-background hover:border-foreground'}`} aria-pressed={savedOnly} data-testid="button-saved-deals"><Heart size={14} fill={savedOnly ? 'currentColor' : 'none'} /> Saved{favorites.length ? ` · ${favorites.length}` : ''}</button><button onClick={() => setFiltersOpen((visible) => !visible)} className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border bg-background ${filtersOpen ? 'border-foreground' : 'border-border'}`} aria-label="Filter deals" aria-expanded={filtersOpen} data-testid="button-filter-deals"><SlidersHorizontal size={15} /></button></div>
       </div>
