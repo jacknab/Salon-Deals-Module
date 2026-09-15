@@ -95,17 +95,17 @@ export function MarketplacePage() {
       {filtersOpen && <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-4 border-t border-border px-5 py-3 lg:px-8" data-testid="deal-filters-panel"><p className="text-xs font-semibold text-muted-foreground">Sort these finds</p><div className="flex gap-2 overflow-x-auto">{([['recommended', 'Recommended'], ['price', 'Lowest price'], ['ending', 'Ending soon']] as const).map(([value, label]) => <button key={value} onClick={() => setSort(value)} className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold ${sort === value ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:text-foreground'}`} data-testid={`button-sort-${value}`}>{label}</button>)}</div></div>}
     </section>
     <section className="mx-auto max-w-[1240px] px-5 pt-10 lg:px-8">
-      <div className="relative overflow-hidden rounded-[26px] bg-secondary">
-        <div className="grid lg:grid-cols-[1.05fr_.95fr]">
-           <img src={featuredDeal.image} alt="" className="h-56 w-full object-cover sm:h-72 lg:h-full lg:min-h-[290px]" />
-          <div className="relative flex flex-col justify-center p-7 sm:p-10">
-            <span className="text-[10px] font-bold uppercase tracking-[.2em] text-foreground/65">Featured this week</span>
-             <h2 className="mt-3 max-w-md font-serif text-4xl font-bold leading-[.92] tracking-[-.05em]">{featuredDeal.title}</h2>
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-foreground/70">A little more light for your hair, with the kind of finish that makes plans feel worth making.</p>
-             <Link href={`/deal/${featuredDeal.id}`} className="mt-6 inline-flex w-fit items-center gap-2 rounded-xl bg-foreground px-4 py-3 text-xs font-bold text-background transition-transform hover:-translate-y-0.5" data-testid="link-featured-deal">See the featured find <ArrowRight size={14} /></Link>
-          </div>
+      <div className="grid gap-4 md:grid-cols-[1.05fr_.95fr]">
+        <div className="relative h-[240px] overflow-hidden rounded-[26px] bg-secondary sm:h-[280px] lg:h-[300px]">
+          <img src={featuredDeal.image} alt="" className="h-full w-full object-cover" />
+          <span className="absolute right-5 top-5 rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-[.12em]">40% off</span>
         </div>
-        <span className="absolute right-5 top-5 hidden rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-[.12em] sm:block">40% off</span>
+        <div className="relative flex h-[240px] flex-col justify-center overflow-hidden rounded-[26px] bg-secondary p-7 sm:h-[280px] sm:p-10 lg:h-[300px]">
+          <span className="text-[10px] font-bold uppercase tracking-[.2em] text-foreground/65">Featured this week</span>
+          <h2 className="mt-3 max-w-md font-serif text-4xl font-bold leading-[.92] tracking-[-.05em]">{featuredDeal.title}</h2>
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-foreground/70">A little more light for your hair, with the kind of finish that makes plans feel worth making.</p>
+          <Link href={`/deal/${featuredDeal.id}`} className="mt-6 inline-flex w-fit items-center gap-2 rounded-xl bg-foreground px-4 py-3 text-xs font-bold text-background transition-transform hover:-translate-y-0.5" data-testid="link-featured-deal">See the featured find <ArrowRight size={14} /></Link>
+        </div>
       </div>
     </section>
     <section className="mx-auto max-w-[1240px] px-5 pb-6 pt-12 lg:px-8">
@@ -113,9 +113,9 @@ export function MarketplacePage() {
       {loading ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"><DealSkeleton /><DealSkeleton /><DealSkeleton /></div> : filtered.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{filtered.map((deal, index) => <div key={deal.id} className={`rise-in delay-${Math.min(index + 1, 4)}`}><DealCard deal={deal} favorite={favorites.includes(deal.id)} toggle={() => toggle(deal.id)} /></div>)}</div> : <div className="rounded-2xl border border-dashed border-border bg-card px-5 py-16 text-center"><div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-muted"><Search size={20} /></div><h3 className="mt-4 font-serif text-2xl font-bold">No finds yet</h3><p className="mt-2 text-sm text-muted-foreground">Try another service, salon, or neighborhood.</p><button onClick={() => { setSearch(''); setCategory('All finds'); }} className="mt-5 text-sm font-bold text-primary underline underline-offset-4" data-testid="button-clear-filters">Clear filters</button></div>}
     </section>
     <section className="mx-auto max-w-[1240px] px-5 pt-12 lg:px-8">
-      <div className="relative overflow-hidden rounded-[28px] bg-primary px-7 py-10 text-primary-foreground sm:px-12 lg:flex lg:items-center lg:justify-between">
-        <div className="absolute -right-8 -top-20 h-72 w-72 rounded-full border-[50px] border-secondary/30" /><div className="relative max-w-xl"><p className="text-xs font-bold uppercase tracking-[.2em] text-accent">Why goodroom?</p><h2 className="mt-3 font-serif text-4xl font-bold leading-[.95] tracking-[-.05em] sm:text-5xl">A better way to say<br /><em className="font-normal">“I deserve this.”</em></h2><p className="mt-5 max-w-md text-sm leading-relaxed text-primary-foreground/75">We partner with the salons you already love—and the ones you’re about to. Every offer is real, local, and easy to use.</p></div>
-        <div className="relative mt-8 grid grid-cols-2 gap-x-10 gap-y-6 text-sm lg:mt-0"><div><p className="font-serif text-3xl font-bold text-accent">100%</p><span className="text-primary-foreground/70">local salons</span></div><div><p className="font-serif text-3xl font-bold text-accent">1 tap</p><span className="text-primary-foreground/70">to your voucher</span></div><div><p className="font-serif text-3xl font-bold text-accent">zero</p><span className="text-primary-foreground/70">mystery pricing</span></div><div><p className="font-serif text-3xl font-bold text-accent">good</p><span className="text-primary-foreground/70">energy only</span></div></div>
+      <div className="relative overflow-hidden rounded-[28px] bg-primary px-7 py-10 text-[#382a25] sm:px-12 lg:flex lg:items-center lg:justify-between">
+        <div className="absolute -right-8 -top-20 h-72 w-72 rounded-full border-[50px] border-secondary/30" /><div className="relative max-w-xl"><p className="text-xs font-bold uppercase tracking-[.2em] text-accent">Why goodroom?</p><h2 className="mt-3 font-serif text-4xl font-bold leading-[.95] tracking-[-.05em] sm:text-5xl">A better way to say<br /><em className="font-normal">“I deserve this.”</em></h2><p className="mt-5 max-w-md text-sm leading-relaxed text-[#382a25]/75">We partner with the salons you already love—and the ones you’re about to. Every offer is real, local, and easy to use.</p></div>
+        <div className="relative mt-8 grid grid-cols-2 gap-x-10 gap-y-6 text-sm lg:mt-0"><div><p className="font-serif text-3xl font-bold text-accent">100%</p><span className="text-[#382a25]/70">local salons</span></div><div><p className="font-serif text-3xl font-bold text-accent">1 tap</p><span className="text-[#382a25]/70">to your voucher</span></div><div><p className="font-serif text-3xl font-bold text-accent">zero</p><span className="text-[#382a25]/70">mystery pricing</span></div><div><p className="font-serif text-3xl font-bold text-accent">good</p><span className="text-[#382a25]/70">energy only</span></div></div>
       </div>
     </section>
   </main><ModePill /></SalonShell>;
