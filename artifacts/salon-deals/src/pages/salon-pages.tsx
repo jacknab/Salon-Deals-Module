@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 're
 import { Link, useLocation, useParams } from 'wouter';
 import { QRCodeSVG } from 'qrcode.react';
 import { Archive, ArrowLeft, ArrowRight, BadgeCheck, CalendarDays, CalendarCheck, Check, ChevronUp, Clock3, Copy, DollarSign, Gift, Heart, Info, MapPin, MoreHorizontal, Pause, Pencil, Play, Plus, Search, Scissors, ShieldCheck, SlidersHorizontal, Sparkles, Star, Ticket, TrendingUp, UsersRound, X } from 'lucide-react';
-import { FavoriteButton, ModePill, SalonShell, SearchBox } from '@/components/salon-shell';
+import { FavoriteButton, ModePill, SalonShell } from '@/components/salon-shell';
 import { Deal, OfferType, Voucher, VoucherStatus, dealDateInputValue, dealEndAt, dealStartAt, getDealAvailability, loadLocal, saveLocal, seededDeals, seededVouchers } from '@/lib/salon-data';
 
 const categories = ['All finds', 'Hair', 'Skin', 'Nails'];
@@ -86,17 +86,14 @@ export function MarketplacePage() {
   }, [category, favorites, savedOnly, search, sort, visibleDeals]);
   const toggle = (id: string) => { const next = favorites.includes(id) ? favorites.filter((x) => x !== id) : [...favorites, id]; setFavorites(next); saveLocal('certxa-favorites', next); };
   const chooseCategory = (next: string) => { setLoading(true); setCategory(next); window.setTimeout(() => setLoading(false), 240); };
-  return <SalonShell><main>
-    <section className="border-y border-border bg-card/55">
-      <div className="mx-auto flex max-w-[1240px] flex-col gap-4 px-5 py-5 lg:flex-row lg:items-center lg:px-8">
-        <SearchBox value={search} onChange={setSearch} />
-        <div className="flex gap-2 overflow-x-auto pb-1 lg:ml-2 lg:pb-0">{categories.map((item) => <button key={item} onClick={() => chooseCategory(item)} className={`whitespace-nowrap rounded-full border px-4 py-2.5 text-xs font-bold transition-all ${category === item ? 'border-foreground bg-foreground text-background' : 'border-border bg-background hover:border-foreground'}`} data-testid={`button-category-${item.toLowerCase().replace(' ', '-')}`}>{item}</button>)}<button onClick={() => setSavedOnly((visible) => !visible)} className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-2.5 text-xs font-bold transition-all ${savedOnly ? 'border-secondary bg-secondary' : 'border-border bg-background hover:border-foreground'}`} aria-pressed={savedOnly} data-testid="button-saved-deals"><Heart size={14} fill={savedOnly ? 'currentColor' : 'none'} /> Saved{favorites.length ? ` · ${favorites.length}` : ''}</button><button onClick={() => setFiltersOpen((visible) => !visible)} className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border bg-background ${filtersOpen ? 'border-foreground' : 'border-border'}`} aria-label="Filter deals" aria-expanded={filtersOpen} data-testid="button-filter-deals"><SlidersHorizontal size={15} /></button></div>
-      </div>
+  return <SalonShell search={search} onSearch={setSearch}><main>
+    <section className="border-b border-border bg-card/55">
+       <div className="mx-auto flex max-w-[1240px] gap-2 overflow-x-auto px-5 py-4 lg:px-8">{categories.map((item) => <button key={item} onClick={() => chooseCategory(item)} className={`whitespace-nowrap rounded-full border px-4 py-2.5 text-xs font-bold transition-all ${category === item ? 'border-foreground bg-foreground text-background' : 'border-border bg-background hover:border-foreground'}`} data-testid={`button-category-${item.toLowerCase().replace(' ', '-')}`}>{item}</button>)}<button onClick={() => setSavedOnly((visible) => !visible)} className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-2.5 text-xs font-bold transition-all ${savedOnly ? 'border-secondary bg-secondary' : 'border-border bg-background hover:border-foreground'}`} aria-pressed={savedOnly} data-testid="button-saved-deals"><Heart size={14} fill={savedOnly ? 'currentColor' : 'none'} /> Saved{favorites.length ? ` · ${favorites.length}` : ''}</button><button onClick={() => setFiltersOpen((visible) => !visible)} className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border bg-background ${filtersOpen ? 'border-foreground' : 'border-border'}`} aria-label="Filter deals" aria-expanded={filtersOpen} data-testid="button-filter-deals"><SlidersHorizontal size={15} /></button></div>
       {filtersOpen && <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-4 border-t border-border px-5 py-3 lg:px-8" data-testid="deal-filters-panel"><p className="text-xs font-semibold text-muted-foreground">Sort these finds</p><div className="flex gap-2 overflow-x-auto">{([['recommended', 'Recommended'], ['price', 'Lowest price'], ['ending', 'Ending soon']] as const).map(([value, label]) => <button key={value} onClick={() => setSort(value)} className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold ${sort === value ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:text-foreground'}`} data-testid={`button-sort-${value}`}>{label}</button>)}</div></div>}
     </section>
     <section className="mx-auto max-w-[1240px] px-5 pt-10 lg:px-8">
       <div className="grid gap-4 md:grid-cols-[1.05fr_.95fr]">
-        {featuredDeals.map((deal, index) => <Link key={deal.id} href={`/deal/${deal.id}`} className="group relative h-[240px] overflow-hidden rounded-[26px] bg-foreground sm:h-[280px] lg:h-[300px]" data-testid={`card-featured-deal-${deal.id}`}>
+        {featuredDeals.map((deal) => <Link key={deal.id} href={`/deal/${deal.id}`} className="group relative h-[240px] overflow-hidden rounded-[26px] bg-foreground sm:h-[280px] lg:h-[300px]" data-testid={`card-featured-deal-${deal.id}`}>
           <img src={deal.image} alt="" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/20 to-foreground/5" />
           <div className="absolute inset-x-5 top-5 flex items-center justify-between gap-3">

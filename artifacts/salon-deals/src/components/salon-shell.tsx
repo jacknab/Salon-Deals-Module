@@ -2,17 +2,18 @@ import { useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Heart, Menu, Search, Store, Ticket, X } from 'lucide-react';
 
-export function SalonShell({ children }: { children: ReactNode }) {
+export function SalonShell({ children, search, onSearch }: { children: ReactNode; search?: string; onSearch?: (value: string) => void }) {
   const [location] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const salonMode = location.startsWith('/salon');
   return (
     <div className="grain min-h-[100dvh] bg-background">
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-[72px] max-w-[1240px] items-center justify-between px-5 lg:px-8">
+        <div className="mx-auto flex h-[72px] max-w-[1240px] items-center gap-4 px-5 lg:gap-7 lg:px-8">
           <Link href="/" className="flex items-center gap-2.5" data-testid="link-brand">
             <span className="font-serif text-[24px] font-normal tracking-[-.045em] text-[#2b2340]">Certxa.</span>
           </Link>
+          {search !== undefined && onSearch && <div className="hidden min-w-0 flex-1 md:flex md:max-w-[280px]"><SearchBox value={search} onChange={onSearch} compact /></div>}
           <nav className="hidden items-center gap-7 text-[13px] font-semibold text-muted-foreground md:flex">
             <Link href="/" className={location === '/' ? 'text-foreground' : 'transition-colors hover:text-foreground'} data-testid="link-discover">Discover</Link>
             <Link href="/wallet" className={location === '/wallet' ? 'text-foreground' : 'transition-colors hover:text-foreground'} data-testid="link-wallet">My vouchers</Link>
@@ -26,6 +27,7 @@ export function SalonShell({ children }: { children: ReactNode }) {
             <span className="hidden h-10 w-10 place-items-center rounded-full bg-secondary font-semibold text-foreground sm:grid" data-testid="avatar-mara">MC</span>
           </div>
         </div>
+        {search !== undefined && onSearch && <div className="border-t border-border/70 px-5 py-3 md:hidden"><SearchBox value={search} onChange={onSearch} compact /></div>}
         {menuOpen && <div className="border-t border-border bg-card px-5 py-4 md:hidden">
           <div className="flex flex-col gap-4 text-sm font-semibold">
             <Link href="/" onClick={() => setMenuOpen(false)} data-testid="mobile-link-discover">Discover deals</Link>
@@ -45,10 +47,10 @@ export function SalonShell({ children }: { children: ReactNode }) {
   );
 }
 
-export function SearchBox({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  return <label className="flex min-h-14 flex-1 items-center gap-3 rounded-2xl border border-border bg-card px-5 shadow-sm transition-shadow focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 focus-within:shadow-[var(--shadow-card)]">
-    <Search size={21} className="shrink-0 text-muted-foreground" />
-    <input value={value} onChange={(e) => onChange(e.target.value)} placeholder="Search services, salons, or neighborhoods" className="w-full bg-transparent text-base outline-none placeholder:text-muted-foreground" data-testid="input-search-deals" />
+export function SearchBox({ value, onChange, compact = false }: { value: string; onChange: (value: string) => void; compact?: boolean }) {
+  return <label className={`flex ${compact ? 'h-10 rounded-xl px-3' : 'min-h-14 rounded-2xl px-5'} flex-1 items-center gap-3 border border-border bg-card shadow-sm transition-shadow focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 focus-within:shadow-[var(--shadow-card)]`}>
+    <Search size={compact ? 17 : 21} className="shrink-0 text-muted-foreground" />
+    <input value={value} onChange={(e) => onChange(e.target.value)} placeholder="Search services, salons, or neighborhoods" className={`${compact ? 'text-sm' : 'text-base'} w-full bg-transparent outline-none placeholder:text-muted-foreground`} data-testid="input-search-deals" />
   </label>;
 }
 
