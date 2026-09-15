@@ -77,7 +77,7 @@ export function MarketplacePage() {
   const [loading, setLoading] = useState(false);
   const deals = loadLocal<Deal[]>('certxa-deals', seededDeals);
   const visibleDeals = deals.filter((deal) => ['active', 'scheduled', 'sold-out'].includes(getDealAvailability(deal)));
-  const featuredDeal = visibleDeals.find((deal) => getDealAvailability(deal) === 'active') ?? visibleDeals[0] ?? seededDeals[0];
+  const featuredDeals = visibleDeals.slice(0, 2).length >= 2 ? visibleDeals.slice(0, 2) : seededDeals.slice(0, 2);
   const filtered = useMemo(() => {
     const matches = visibleDeals.filter((deal) => (category === 'All finds' || deal.category === category) && (!savedOnly || favorites.includes(deal.id)) && `${deal.title} ${deal.salonName} ${deal.city} ${deal.category}`.toLowerCase().includes(search.toLowerCase()));
     if (sort === 'price') return [...matches].sort((a, b) => a.dealPrice - b.dealPrice);
@@ -96,16 +96,22 @@ export function MarketplacePage() {
     </section>
     <section className="mx-auto max-w-[1240px] px-5 pt-10 lg:px-8">
       <div className="grid gap-4 md:grid-cols-[1.05fr_.95fr]">
-        <div className="relative h-[240px] overflow-hidden rounded-[26px] bg-secondary sm:h-[280px] lg:h-[300px]">
-          <img src={featuredDeal.image} alt="" className="h-full w-full object-cover" />
-          <span className="absolute right-5 top-5 rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-[.12em]">40% off</span>
-        </div>
-        <div className="relative flex h-[240px] flex-col justify-center overflow-hidden rounded-[26px] bg-secondary p-7 sm:h-[280px] sm:p-10 lg:h-[300px]">
-          <span className="text-[10px] font-bold uppercase tracking-[.2em] text-foreground/65">Featured this week</span>
-          <h2 className="mt-3 max-w-md font-serif text-4xl font-bold leading-[.92] tracking-[-.05em]">{featuredDeal.title}</h2>
-          <p className="mt-4 max-w-sm text-sm leading-relaxed text-foreground/70">A little more light for your hair, with the kind of finish that makes plans feel worth making.</p>
-          <Link href={`/deal/${featuredDeal.id}`} className="mt-6 inline-flex w-fit items-center gap-2 rounded-xl bg-foreground px-4 py-3 text-xs font-bold text-background transition-transform hover:-translate-y-0.5" data-testid="link-featured-deal">See the featured find <ArrowRight size={14} /></Link>
-        </div>
+        {featuredDeals.map((deal, index) => <Link key={deal.id} href={`/deal/${deal.id}`} className="group relative h-[240px] overflow-hidden rounded-[26px] bg-foreground sm:h-[280px] lg:h-[300px]" data-testid={`card-featured-deal-${deal.id}`}>
+          <img src={deal.image} alt="" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/20 to-foreground/5" />
+          <div className="absolute inset-x-5 top-5 flex items-center justify-between gap-3">
+            <span className="rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-[.12em] text-accent-foreground">{deal.discountPercent}% off</span>
+            <span className="rounded-full bg-card/85 px-3 py-1 text-[10px] font-bold uppercase tracking-[.12em] text-foreground backdrop-blur-sm">Featured deal</span>
+          </div>
+          <div className="absolute inset-x-5 bottom-5 text-background sm:inset-x-7 sm:bottom-7">
+            <p className="text-[10px] font-bold uppercase tracking-[.18em] text-background/70">{deal.category} · {deal.salonName}</p>
+            <h2 className="mt-2 max-w-lg font-serif text-2xl font-bold leading-[.95] tracking-[-.04em] sm:text-3xl">{deal.title}</h2>
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <p className="font-serif text-xl font-bold">{money(deal.dealPrice)} <span className="ml-1 text-xs font-sans font-normal text-background/65 line-through">{money(deal.originalPrice)}</span></p>
+              <span className="inline-flex items-center gap-1.5 rounded-xl bg-background px-3 py-2 text-xs font-bold text-foreground transition-transform group-hover:-translate-y-0.5">View deal <ArrowRight size={14} /></span>
+            </div>
+          </div>
+        </Link>)}
       </div>
     </section>
     <section className="mx-auto max-w-[1240px] px-5 pb-6 pt-12 lg:px-8">
